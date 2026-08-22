@@ -1,14 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Veenzyk Skill</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veezy Skills — Video Editor</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; cursor:none; }
+html { scroll-behavior:smooth; }
+body { background:#050505; color:#f5f5f5; font-family:Arial,Helvetica,sans-serif; overflow-x:hidden; }
+a { color:inherit; text-decoration:none; }
+.retro-cursor { position:fixed; left:0; top:0; width:35px; height:35px; pointer-events:none; z-index:999999; transform:translate(-2px,-2px); }
+.retro-cursor::before { content:""; position:absolute; width:0; height:0; border-top:27px solid white; border-right:15px solid transparent; filter:drop-shadow(2px 0 0 #000) drop-shadow(-2px 0 0 #000) drop-shadow(0 2px 0 #000) drop-shadow(0 -2px 0 #000); }
+.nav { position:fixed; top:0; left:0; width:100%; padding:22px 7%; display:flex; align-items:center; justify-content:space-between; z-index:1000; }
+.logo { display:flex; align-items:center; gap:12px; font-size:13px; font-weight:900; letter-spacing:3px; }
+.logo img { width:43px; height:43px; object-fit:cover; border-radius:50%; mix-blend-mode:screen; filter:drop-shadow(0 0 7px white) drop-shadow(0 0 18px rgba(255,255,255,.5)); }
+.nav-right { color:#777; font-size:9px; letter-spacing:3px; }
+.hero { min-height:100vh; padding:150px 8% 100px; display:flex; align-items:center; position:relative; overflow:hidden; }
+.hero-content { position:relative; z-index:5; max-width:850px; }
+.small-title { color:#777; font-size:10px; letter-spacing:4px; margin-bottom:30px; }
+.hero h1 { font-size:clamp(65px,9.5vw,145px); line-height:.82; letter-spacing:-10px; font-weight:900; }
+.hero h1 span,.why h2 span,.skills-header h2 span,.reviews-header h2 span,.pricing-header h2 span,.portfolio-header h2 span,.thumbnail-header h2 span,.delivery h2 span,.contact h2 span { color:#aaa; }
+.hero-text { margin-top:42px; max-width:590px; color:#999; font-size:14px; line-height:1.9; }
+.hero-button,.contact-button { display:inline-block; margin-top:38px; padding:16px 23px; background:white; color:black; font-size:9px; font-weight:900; letter-spacing:2px; transition:.3s; }
+.hero-button:hover,.contact-button:hover { transform:translateY(-5px); box-shadow:0 15px 45px rgba(255,255,255,.18); }
+.hero-character { position:absolute; right:5%; bottom:-2%; width:min(520px,42vw); z-index:3; pointer-events:none; opacity:.96; mix-blend-mode:screen; filter:drop-shadow(0 0 15px rgba(255,255,255,.12)) drop-shadow(0 0 40px rgba(255,255,255,.08)); animation:characterFloat 5s ease-in-out infinite; }
+.hero-character img { width:100%; display:block; object-fit:contain; mix-blend-mode:screen; }
+@keyframes characterFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+.hero::after { content:""; position:absolute; width:450px; height:450px; right:10%; top:25%; border-radius:50%; background:rgba(255,255,255,.035); filter:blur(80px); pointer-events:none; }
+.scroll-line { position:absolute; bottom:0; left:8%; height:125px; width:1px; background:#242424; }
+.scroll-line::after { content:""; position:absolute; bottom:0; left:-1px; width:3px; height:35px; background:white; box-shadow:0 0 12px white,0 0 25px rgba(255,255,255,.5); }
+.section { padding:140px 8% 160px; }
+.section-line { width:100%; height:1px; background:#292929; margin-bottom:100px; }
+.section-number { color:#666; font-size:10px; letter-spacing:3px; }
+.why,.delivery { max-width:900px; margin:auto; text-align:center; }
+.why h2,.skills-header h2,.reviews-header h2,.pricing-header h2,.portfolio-header h2,.thumbnail-header h2,.delivery h2 { margin-top:30px; font-size:clamp(60px,8vw,105px); line-height:.85; letter-spacing:-7px; font-weight:900; }
+.why-description,.skills-header p,.reviews-header p,.pricing-header p,.delivery p { max-width:650px; margin:40px auto 0; color:#888; font-size:14px; line-height:1.9; }
+.timeline,.skills-timeline { position:relative; max-width:1050px; margin:120px auto 0; padding-bottom:50px; }
+.timeline::before,.skills-timeline::before { content:""; position:absolute; left:50%; top:0; bottom:0; width:2px; background:#222; transform:translateX(-50%); }
+.timeline-progress,.skills-progress { position:absolute; left:50%; top:0; width:2px; height:0; background:white; transform:translateX(-50%); z-index:2; box-shadow:0 0 12px white,0 0 25px rgba(255,255,255,.5); }
+.timeline-item,.skill-item { position:relative; width:50%; min-height:185px; opacity:.18; transform:translateY(30px); transition:opacity .7s ease,transform .7s ease; }
+.timeline-item.active,.skill-item.active { opacity:1; transform:translateY(0); }
+.timeline-item.left,.skill-item.left { padding-right:90px; text-align:right; }
+.timeline-item.right,.skill-item.right { margin-left:50%; padding-left:90px; text-align:left; }
+.timeline-dot,.skill-dot { position:absolute; top:8px; width:11px; height:11px; background:#222; border-radius:50%; z-index:5; transition:.5s; }
+.timeline-item.left .timeline-dot,.skill-item.left .skill-dot { right:-5px; }
+.timeline-item.right .timeline-dot,.skill-item.right .skill-dot { left:-5px; }
+.timeline-item.active .timeline-dot,.skill-item.active .skill-dot { background:white; box-shadow:0 0 0 5px #050505,0 0 15px white,0 0 30px rgba(255,255,255,.6); }
+.timeline-content,.skill-content { max-width:400px; }
+.timeline-content .number,.skill-content small { color:#666; font-size:9px; letter-spacing:3px; }
+.timeline-content h3,.skill-content h3 { margin-top:9px; font-size:25px; }
+.timeline-content h3::before,.skill-content h3::before,.project-info h3::before { content:"→ "; color:#aaa; }
+.timeline-content p,.skill-content p { margin-top:12px; color:#777; font-size:12px; line-height:1.8; }
+.premiere { max-width:850px; margin:60px auto 0; padding:25px 0; display:flex; align-items:center; gap:20px; border-top:1px solid #292929; border-bottom:1px solid #292929; }
+.premiere-logo { width:52px; height:52px; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:18px; border:1px solid #333; box-shadow:0 0 20px rgba(255,255,255,.07); }
+.premiere h3 { font-size:17px; } .premiere p { margin-top:7px; color:#666; font-size:11px; }
+.skills-section { padding:150px 8% 170px; text-align:center; }
+.skills-header { max-width:850px; margin:0 auto 110px; }
+.skills-timeline { max-width:1000px; margin:auto; padding:40px 0 100px; }
+.skill-item { min-height:170px; }
+.skill-item.left .skill-dot { right:-6px; } .skill-item.right .skill-dot { left:-6px; }
+.reviews { padding:130px 0 140px; overflow:hidden; background:#080808; }
+.reviews-header { text-align:center; padding:0 8%; }
+.review-track { display:flex; width:max-content; margin-top:75px; animation:reviewScroll 35s linear infinite; }
+.review-track:hover { animation-play-state:paused; }
+@keyframes reviewScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.review { width:400px; margin-right:35px; padding:28px 0; border-top:1px solid #303030; border-bottom:1px solid #303030; }
+.stars { color:white; font-size:19px; letter-spacing:4px; margin-bottom:20px; text-shadow:0 0 5px white,0 0 12px white,0 0 25px rgba(255,255,255,.7); }
+.review-text { min-height:75px; color:#aaa; font-size:13px; line-height:1.8; } .review-author { margin-top:20px; color:white; font-size:9px; letter-spacing:2px; }
+.pricing,.portfolio { padding:140px 8% 160px; }
+.pricing-header { max-width:900px; } .pricing-header p { margin-top:40px; text-align:left; }
+.pricing-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:45px; margin-top:70px; }
+.price-card { position:relative; padding:25px 0 40px; border-top:1px solid #333; border-bottom:1px solid #333; transition:.4s; }
+.price-card:hover { transform:translateY(-7px); } .price-card.featured { border-top-color:white; }
+.price-tag { position:absolute; top:25px; right:0; color:#666; font-size:8px; letter-spacing:2px; }
+.price { font-size:62px; font-weight:900; letter-spacing:-5px; } .price-card h3 { margin-top:18px; font-size:22px; }
+.price-description { margin-top:20px; color:#777; font-size:12px; line-height:1.8; }
+.price-list { margin-top:25px; list-style:none; } .price-list li { padding:7px 0; color:#999; font-size:11px; } .price-list li::before { content:"→ "; color:white; }
+.special-offer { margin-top:50px; padding:24px 0; border-top:1px solid #292929; border-bottom:1px solid #292929; color:#888; font-size:11px; letter-spacing:1px; } .special-offer strong { color:white; }
+.portfolio-grid { margin-top:70px; display:grid; grid-template-columns:1.4fr .8fr; gap:45px; }
+.project { overflow:hidden; border-bottom:1px solid #292929; } .project img { width:100%; display:block; aspect-ratio:16/9; object-fit:cover; transition:.6s; } .project:hover img { transform:scale(1.04); }
+.project-info { padding:20px 0 25px; } .project-info h3 { font-size:18px; } .project-info p { margin-top:8px; color:#666; font-size:9px; letter-spacing:2px; }
+.thumbnails { padding:130px 8% 160px; background:#080808; } .thumbnail-header { text-align:center; }
+.thumbnail-grid { margin-top:70px; display:grid; grid-template-columns:repeat(3,1fr); gap:30px; } .thumbnail { overflow:hidden; padding-bottom:15px; border-bottom:1px solid #292929; } .thumbnail img { width:100%; display:block; transition:.5s; } .thumbnail:hover img { transform:scale(1.04); }
+.delivery-time { margin:55px auto 0; padding:25px 0; border-top:1px solid #292929; border-bottom:1px solid #292929; color:#777; font-size:11px; letter-spacing:2px; } .delivery-time strong { color:white; }
+.contact { min-height:90vh; display:flex; align-items:center; justify-content:center; padding:100px 8%; text-align:center; } .contact h2 { font-size:clamp(60px,9vw,120px); line-height:.82; letter-spacing:-9px; }
+.contact p { max-width:600px; margin:40px auto; color:#888; font-size:14px; line-height:1.8; } .contact-button { margin-top:0; }
+footer { padding:28px 8%; border-top:1px solid #222; display:flex; justify-content:space-between; color:#555; font-size:9px; letter-spacing:2px; }
+@media(max-width:800px){ .nav{padding:18px 6%;}.nav-right{display:none}.hero{min-height:auto;padding:140px 7% 80px;display:block}.hero h1{letter-spacing:-6px}.hero-character{position:relative;right:auto;bottom:auto;width:270px;margin:45px auto -30px}.section{padding:100px 7% 120px}.timeline::before,.skills-timeline::before{left:10px;transform:none}.timeline-progress,.skills-progress{left:10px;transform:none}.timeline-item,.timeline-item.left,.timeline-item.right,.skill-item,.skill-item.left,.skill-item.right{width:100%;margin-left:0;padding:0 0 0 55px;text-align:left;min-height:175px}.timeline-item.left .timeline-dot,.timeline-item.right .timeline-dot,.skill-item.left .skill-dot,.skill-item.right .skill-dot{left:5px;right:auto}.pricing-grid,.portfolio-grid,.thumbnail-grid{grid-template-columns:1fr}footer{flex-direction:column;gap:12px}.pricing-header p{text-align:left}}
+</style>
 </head>
 <body>
-  <main>
-    <h1>Veenzyk Skill</h1>
-    <p>Portfolio website — replace this content with your final design.</p>
-  </main>
+<div class="retro-cursor"></div>
+<nav class="nav"><a href="#top" class="logo"><img src="https://cdn.leonardo.ai/users/04bd252f-f820-4755-8f73-14fcc38483d1/generations/1f19d65c-14aa-6b70-8c3a-dbdca194bb5d/krea-2-turbo_Minimalist_Spider-Man_inspired_logo_white_spider_eyes_forming_a_subtle_letter_V_-0.jpg" alt="Veezy Logo">VEEZY</a><div class="nav-right">VIDEO EDITOR · 2026</div></nav>
+<section class="hero" id="top"><div class="hero-content"><div class="small-title">VIDEO EDITOR / THUMBNAIL DESIGNER</div><h1>I EDIT.<br>YOU <span>CREATE.</span></h1><p class="hero-text">I turn raw footage into clean, engaging and high-retention content. YouTube, Shorts, IRL, gaming, thumbnails and more.</p><a href="#why" class="hero-button">EXPLORE MY WORK ↓</a></div><div class="hero-character"><img src="https://cdn.leonardo.ai/users/96d339a9-0a23-436a-bff6-20ed56611b53/generations/1f19d724-a445-61e0-9437-02c2a68164da/flux-dev_Full-body_Spider-Man-inspired_superhero_character_wearing_a_large_black_hood_ove-0.jpg" alt="Veezy Character"></div><div class="scroll-line"></div></section>
+<section class="section" id="why"><div class="section-line"></div><div class="why"><div class="section-number">01 / WHY ME</div><h2>Why start <span>with me?</span></h2><p class="why-description">I don't just throw clips onto a timeline. I focus on pacing, retention, storytelling, sound design and the small details that make an edit feel professional.</p></div><div class="timeline"><div class="timeline-progress"></div><div class="timeline-item left"><div class="timeline-dot"></div><div class="timeline-content"><div class="number">01</div><h3>Fast delivery</h3><p>Most projects can be delivered within 48 hours depending on complexity.</p></div></div><div class="timeline-item right"><div class="timeline-dot"></div><div class="timeline-content"><div class="number">02</div><h3>Clean editing</h3><p>No unnecessary effects. Every zoom, cut and SFX has a purpose.</p></div></div><div class="timeline-item left"><div class="timeline-dot"></div><div class="timeline-content"><div class="number">03</div><h3>Creator focused</h3><p>Your style comes first. I adapt the edit to your content and audience.</p></div></div><div class="timeline-item right"><div class="timeline-dot"></div><div class="timeline-content"><div class="number">04</div><h3>1+ year experience</h3><p>I have over one year of DaVinci Resolve experience and have now switched to Premiere Pro.</p></div></div></div><div class="premiere"><div class="premiere-logo">Pr</div><div><h3>Switched to Adobe Premiere Pro</h3><p>1+ year of DaVinci Resolve experience, now expanding my workflow with Premiere Pro.</p></div></div></section>
+<section class="skills-section" id="skills"><div class="skills-header"><div class="section-number">02 / SKILLS</div><h2>What I <span>can do.</span></h2><p>From clean cuts to sound design, thumbnails and fast-paced edits — I can handle the details that make your content feel complete.</p></div><div class="skills-timeline"><div class="skills-progress"></div><div class="skill-item left"><div class="skill-dot"></div><div class="skill-content"><small>01</small><h3>Video Editing</h3><p>Clean cuts, pacing, transitions and storytelling.</p></div></div><div class="skill-item right"><div class="skill-dot"></div><div class="skill-content"><small>02</small><h3>YouTube Editing</h3><p>Long-form videos designed to keep viewers watching.</p></div></div><div class="skill-item left"><div class="skill-dot"></div><div class="skill-content"><small>03</small><h3>Shorts / Reels</h3><p>Fast pacing, captions, zooms and SFX.</p></div></div><div class="skill-item right"><div class="skill-dot"></div><div class="skill-content"><small>04</small><h3>IRL / Vlogs</h3><p>Natural cuts, music, sound design and dynamic moments.</p></div></div><div class="skill-item left"><div class="skill-dot"></div><div class="skill-content"><small>05</small><h3>Gaming Edits</h3><p>Highlights, reactions, zooms, effects and pacing.</p></div></div><div class="skill-item right"><div class="skill-dot"></div><div class="skill-content"><small>06</small><h3>Sound Design</h3><p>Music, SFX, audio balancing and impactful details.</p></div></div><div class="skill-item left"><div class="skill-dot"></div><div class="skill-content"><small>07</small><h3>Thumbnail Design</h3><p>Clean, clickable thumbnails matching your channel identity.</p></div></div><div class="skill-item right"><div class="skill-dot"></div><div class="skill-content"><small>08</small><h3>Captions</h3><p>Dynamic subtitles that fit the style and pacing.</p></div></div></div></section>
+<section class="reviews"><div class="reviews-header"><div class="section-number">03 / REVIEWS</div><h2>What people <span>say.</span></h2><p>Feedback from creators and clients. Replace these with your real reviews when you start collecting them.</p></div><div class="review-track"><div class="review"><div class="stars">★★★★★</div><p class="review-text">"The pacing was exactly what I wanted. The video felt much more professional."</p><div class="review-author">CREATOR / CLIENT</div></div><div class="review"><div class="stars">★★★★★</div><p class="review-text">"Really clean editing and communication. The turnaround was surprisingly fast."</p><div class="review-author">CREATOR / CLIENT</div></div><div class="review"><div class="stars">★★★★★</div><p class="review-text">"The zooms and sound effects were used perfectly without making the edit feel overloaded."</p><div class="review-author">CREATOR / CLIENT</div></div><div class="review"><div class="stars">★★★★★</div><p class="review-text">"Fast, clean and easy to work with. Definitely recommend."</p><div class="review-author">CREATOR / CLIENT</div></div><div class="review"><div class="stars">★★★★★</div><p class="review-text">"The pacing was exactly what I wanted. The video felt much more professional."</p><div class="review-author">CREATOR / CLIENT</div></div><div class="review"><div class="stars">★★★★★</div><p class="review-text">"Really clean editing and communication. The turnaround was surprisingly fast."</p><div class="review-author">CREATOR / CLIENT</div></div><div class="review"><div class="stars">★★★★★</div><p class="review-text">"The zooms and sound effects were used perfectly without making the edit feel overloaded."</p><div class="review-author">CREATOR / CLIENT</div></div><div class="review"><div class="stars">★★★★★</div><p class="review-text">"Fast, clean and easy to work with. Definitely recommend."</p><div class="review-author">CREATOR / CLIENT</div></div></div></section>
+<section class="pricing" id="pricing"><div class="pricing-header"><div class="section-number">04 / PRICING</div><h2>Simple <span>pricing.</span></h2><p>Every project is different. These are starting prices and can change depending on complexity.</p></div><div class="pricing-grid"><div class="price-card"><div class="price">€50</div><h3>Short</h3><p class="price-description">Full short-form edit for YouTube Shorts, TikTok or Reels.</p><ul class="price-list"><li>Full edit</li><li>Captions</li><li>Zooms</li><li>SFX</li><li>Music</li></ul></div><div class="price-card featured"><div class="price-tag">FIRST ORDER</div><div class="price">€120</div><h3>Full Edit</h3><p class="price-description">Complete YouTube editing with clean pacing, zooms, SFX and sound design.</p><ul class="price-list"><li>Full video editing</li><li>Zooms</li><li>SFX</li><li>Music</li><li>Captions</li></ul></div><div class="price-card"><div class="price-tag">PREMIUM</div><div class="price">€250</div><h3>Premium</h3><p class="price-description">More complex projects, advanced editing and priority delivery.</p><ul class="price-list"><li>Advanced editing</li><li>Advanced SFX</li><li>Motion graphics</li><li>Thumbnail</li><li>Priority delivery</li></ul></div></div><div class="special-offer"><strong>→ SECOND ORDER:</strong> First order €120 → second order €70</div><p style="margin-top:22px;color:#666;font-size:11px;">Minimum project price: €50.</p></section>
+<section class="portfolio" id="work"><div class="portfolio-header"><div class="section-number">05 / SELECTED WORK</div><h2>Selected <span>work.</span></h2></div><div class="portfolio-grid"><div class="project"><img src="project1.jpg" alt="YouTube project"><div class="project-info"><h3>YouTube Project</h3><p>LONG FORM</p></div></div><div class="project"><img src="project2.jpg" alt="Gaming project"><div class="project-info"><h3>Gaming Edit</h3><p>GAMING</p></div></div><div class="project"><img src="noob.png" alt="IRL Thumbnail"><div class="project-info"><h3>IRL / VLOG</h3><p>IRL THUMBNAIL</p></div></div></div></section>
+<section class="thumbnails"><div class="thumbnail-header"><div class="section-number">06 / THUMBNAILS</div><h2>I also make <span>thumbnails.</span></h2></div><div class="thumbnail-grid"><div class="thumbnail"><img src="noob.png" alt="IRL Thumbnail"></div><div class="thumbnail"><img src="thumbnail2.jpg" alt="Thumbnail"></div><div class="thumbnail"><img src="thumbnail3.jpg" alt="Thumbnail"></div></div></section>
+<section class="section"><div class="delivery"><div class="section-number">07 / DELIVERY</div><h2>Fast. <span>Clean.</span></h2><p>Once payment is completed and all required files are received, I aim to deliver projects within 48 hours — or sooner whenever possible.</p><div class="delivery-time">→ <strong>UP TO 48-HOUR DELIVERY</strong> · depending on project complexity</div></div></section>
+<section class="contact" id="contact"><div><div class="small-title">LET'S WORK TOGETHER</div><h2>Have footage?<br><span>Send it.</span></h2><p>Tell me what you're working on, what style you want and when you need it.</p><a href="mailto:YOUR@email.com" class="contact-button">CONTACT ME ↗</a></div></section>
+<footer><span>© 2026 VEEZY</span><span>VIDEO EDITOR</span><span>PREMIERE PRO</span></footer>
+<script>
+const cursor=document.querySelector('.retro-cursor');
+document.addEventListener('mousemove',e=>{cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px';});
+const timeline=document.querySelector('.timeline'),timelineProgress=document.querySelector('.timeline-progress'),timelineItems=document.querySelectorAll('.timeline-item');
+function updateMainTimeline(){if(!timeline)return;const rect=timeline.getBoundingClientRect(),vh=window.innerHeight;let progress=(vh*.75-rect.top)/rect.height;progress=Math.max(0,Math.min(1,progress));timelineProgress.style.height=(progress*100)+'%';timelineItems.forEach(item=>{if(item.getBoundingClientRect().top<vh*.75)item.classList.add('active');});}
+const skillsTimeline=document.querySelector('.skills-timeline'),skillsProgress=document.querySelector('.skills-progress'),skillItems=document.querySelectorAll('.skill-item');
+function updateSkillsTimeline(){if(!skillsTimeline)return;const rect=skillsTimeline.getBoundingClientRect(),vh=window.innerHeight;let progress=(vh*.75-rect.top)/rect.height;progress=Math.max(0,Math.min(1,progress));skillsProgress.style.height=(progress*100)+'%';skillItems.forEach(item=>{if(item.getBoundingClientRect().top<vh*.75)item.classList.add('active');});}
+window.addEventListener('scroll',()=>{updateMainTimeline();updateSkillsTimeline();},{passive:true});
+window.addEventListener('resize',()=>{updateMainTimeline();updateSkillsTimeline();});
+updateMainTimeline();updateSkillsTimeline();
+</script>
 </body>
 </html>
