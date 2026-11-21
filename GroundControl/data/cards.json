@@ -1,0 +1,79 @@
+{
+  "_types": "report | measurement | photo | fax | sample  (deduction cards are created from deductions.json)",
+  "_optional": "cards with \"optional\": true are not required for the Full Wall achievement",
+  "cards": {
+    "c_charter": {
+      "type": "report",
+      "title": "LOA Charter",
+      "text": "Lunar Operations Agency, chartered July 20, 1969. Before that date the agency — and all of its hardware — did not exist.",
+      "day": 1
+    },
+    "c_selene_brief": {
+      "type": "report",
+      "title": "Selene-1 Brief",
+      "text": "Mia Halloran. 30-day solo surface stay, Mare Serenitatis. Habitat at the lander, Site Alpha 1.2 km north-east.",
+      "day": 1
+    },
+    "c_sample_14": {
+      "type": "sample",
+      "title": "Sample #14 — Basalt",
+      "text": "Fine-grained basalt from the shadow at Site Alpha. Mia: 'It's warm. I can feel it through the glove.'",
+      "day": 1
+    },
+    "c_thermal_alpha": {
+      "type": "measurement",
+      "title": "Thermal Survey — Site Alpha",
+      "text": "Shadowed regolith at Site Alpha: -23 °C. Nothing in that shadow should be warm.",
+      "day": 1
+    },
+    "c_pse_d1": {
+      "type": "measurement",
+      "title": "PSE Log — Night 12",
+      "text": "Three micro-tremors: 02:14, 02:25, 02:36 — eleven minutes apart. Flagged 'thermal'.",
+      "day": 1
+    },
+    "c_pse_d2": {
+      "type": "measurement",
+      "title": "PSE Log — Night 13",
+      "text": "Tremors every 11.2 minutes, all day. Source depth about 40 m, directly beneath Site Alpha.",
+      "day": 2
+    },
+    "c_radio_hum": {
+      "type": "measurement",
+      "title": "S-Band Hum",
+      "text": "Low carrier noise on Mia's voice loop. It swells and fades every 11.2 minutes.",
+      "day": 2
+    },
+    "c_geophone": {
+      "type": "measurement",
+      "title": "Geophone Array",
+      "text": "Pulse shape repeats: 3-1-4 … 3-1-4 … Not noise. A pattern.",
+      "day": 2
+    },
+    "c_hq_order": {
+      "type": "fax",
+      "title": "HQ Order 71-114",
+      "text": "Classify the pulse as an instrument fault. The crew is not to be informed.",
+      "day": 2
+    },
+    "c_supply": {
+      "type": "fax",
+      "title": "Resupply Schedule",
+      "text": "Selene-2 cargo lander delayed to March 19. Crew to conserve consumables.",
+      "day": 2,
+      "optional": true
+    },
+    "c_probe_photo": {
+      "type": "photo",
+      "title": "Helmet Cam Frame 0412",
+      "text": "A squat metal shape half-buried at the bottom of Rille Bend. Pitted, old, humming.",
+      "day": 3
+    },
+    "c_probe_plaque": {
+      "type": "photo",
+      "title": "The Plaque",
+      "text": "Stamped metal: 'LOA · GROUND CONTROL · UNIT 00 · 1958'.",
+      "day": 3
+    }
+  }
+}

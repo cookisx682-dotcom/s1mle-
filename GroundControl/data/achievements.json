@@ -1,0 +1,12 @@
+{
+  "achievements": [
+    {"id": "houston", "icon": "!!", "title": "Houston, We Have a Problem", "description": "Face your first crisis.", "trigger": {"on": "crisis_started"}},
+    {"id": "not_a_drop", "icon": "O2", "title": "Not a Drop Wasted", "description": "Finish a shift without wasting any oxygen.", "trigger": {"on": "day_report", "match": {"no_oxygen_waste": true}}},
+    {"id": "red_string", "icon": "//", "title": "Red String", "description": "Make your first deduction on the board.", "trigger": {"on": "deduction_found"}},
+    {"id": "full_wall", "icon": "##", "title": "Full Wall", "description": "Pin every card of the demo to the board.", "trigger": {"on": "board_full"}},
+    {"id": "rebel", "icon": "><", "title": "Rebel", "description": "Disobey a direct order from HQ.", "trigger": {"on": "flag_set", "match": {"flag": "disobeyed_hq"}}},
+    {"id": "blind_nav", "icon": "()", "title": "Blind Navigation", "description": "Guide Mia to a site with the helmet camera switched off.", "trigger": {"on": "navigation_success", "match": {"helmet_cam": false}}},
+    {"id": "best_colleagues", "icon": "<3", "title": "Best Colleagues", "description": "Reach 90 rapport with Mia.", "trigger": {"on": "trust_changed", "match": {"min_value": 90}}},
+    {"id": "signal_acquired", "icon": "))", "title": "Signal Acquired", "description": "Finish the demo.", "trigger": {"on": "demo_complete"}}
+  ]
+}

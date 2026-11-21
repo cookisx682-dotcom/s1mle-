@@ -1,0 +1,127 @@
+{
+  "days": [
+    {
+      "id": "day1",
+      "year": 1971,
+      "date": "MARCH 3, 1971",
+      "date_short": "03 MAR 1971",
+      "title": "SHIFT 1 — NIGHT LOOP",
+      "era": "1970s",
+      "shift_minutes": 10,
+      "clock_start": "20:00",
+      "clock_end": "04:00",
+      "intro": [
+        "Lunar Operations Agency. Mission Control, Building 30-B.",
+        "Selene-1 has been on the Moon for twelve days. Mia Halloran is alone up there.",
+        "Tonight you are the new night CAPCOM — the only voice she will hear."
+      ],
+      "resources": {"oxygen": 100, "power": 100, "temperature": 21},
+      "timeline": [
+        {"at": 0.0, "effects": [{"type": "visitor", "id": "v_hale_d1"}]},
+        {"at": 0.02, "effects": [{"type": "dialogue", "id": "d1_intro"}]},
+        {"at": 0.28, "effects": [{"type": "fax", "id": "f_d1_thermal"}]},
+        {"at": 0.55, "effects": [{"type": "fax", "id": "f_d1_pse"}]},
+        {"at": 0.84, "effects": [{"type": "dialogue", "id": "d1_goodnight"}]}
+      ],
+      "triggers": [
+        {
+          "id": "ruth_board_tip",
+          "on": "card_discovered",
+          "if": {"card": ["c_sample_14", "c_thermal_alpha"], "no_deduction": "ded_warm_rock"},
+          "effects": [{"type": "visitor", "id": "v_ruth_tip"}]
+        }
+      ],
+      "random_crises": {"count": [1, 1], "pool": ["c_o2_spike", "c_signal_drop", "c_micrometeorite"], "window": [0.4, 0.7]},
+      "side_missions": {"count": [1, 1], "window": [0.35, 0.6]}
+    },
+    {
+      "id": "day2",
+      "year": 1971,
+      "date": "MARCH 4, 1971",
+      "date_short": "04 MAR 1971",
+      "title": "SHIFT 2 — INTERFERENCE",
+      "era": "1970s",
+      "shift_minutes": 10,
+      "clock_start": "20:00",
+      "clock_end": "04:00",
+      "intro": [
+        "Day thirteen on the surface.",
+        "The seismometer has been chattering since noon. Officially: thermal creep.",
+        "Unofficially, nobody in the building wants to talk about it."
+      ],
+      "resources": {"oxygen": 100, "power": 95, "temperature": 20},
+      "timeline": [
+        {"at": 0.0, "effects": [{"type": "visitor", "id": "v_ruth_d2"}]},
+        {"at": 0.02, "effects": [{"type": "dialogue", "id": "d2_morning"}]},
+        {"at": 0.45, "effects": [{"type": "fax", "id": "f_d2_supply"}]},
+        {"at": 0.7, "if": {"no_deduction": "ded_transmitter"}, "effects": [{"type": "visitor", "id": "v_ruth_hint_d2"}]},
+        {"at": 0.86, "effects": [{"type": "dialogue", "id": "d2_night"}]}
+      ],
+      "triggers": [],
+      "random_crises": {"count": [1, 2], "pool": ["c_o2_spike", "c_signal_drop", "c_micrometeorite", "c_power_surge"], "window": [0.3, 0.75]},
+      "side_missions": {"count": [1, 1], "window": [0.4, 0.65]}
+    },
+    {
+      "id": "day3",
+      "year": 1971,
+      "date": "MARCH 5, 1971",
+      "date_short": "05 MAR 1971",
+      "title": "SHIFT 3 — THE GLINT",
+      "era": "1970s",
+      "shift_minutes": 11,
+      "clock_start": "20:00",
+      "clock_end": "04:00",
+      "intro": [
+        "Day fourteen.",
+        "Overnight, HQ declared Site Alpha off-limits. No reason given.",
+        "At sunrise, Mia saw something shining at the bottom of Rille Bend."
+      ],
+      "resources": {"oxygen": 100, "power": 92, "temperature": 20},
+      "timeline": [
+        {"at": 0.0, "effects": [{"type": "visitor", "id": "v_hale_d3"}]},
+        {"at": 0.02, "effects": [{"type": "dialogue", "id": "d3_glint"}]}
+      ],
+      "triggers": [
+        {
+          "id": "order_after_probe",
+          "on": "dialogue_finished",
+          "match": {"id": "d3_probe"},
+          "effects": [{"type": "delay", "seconds": 4, "effects": [{"type": "fax", "id": "f_d3_order"}]}]
+        },
+        {
+          "id": "ruth_after_rebel",
+          "on": "flag_set",
+          "match": {"flag": "disobeyed_hq"},
+          "effects": [{"type": "delay", "seconds": 8, "effects": [{"type": "visitor", "id": "v_ruth_d3"}]}]
+        }
+      ],
+      "random_crises": {"count": [1, 1], "pool": ["c_o2_spike", "c_micrometeorite", "c_power_surge"], "window": [0.1, 0.25]},
+      "side_missions": {"count": [0, 1], "window": [0.12, 0.25]}
+    }
+  ],
+  "report_comments": {
+    "A": "Textbook shift. If you keep this up they'll make you flight director someday. — W. Hale",
+    "B": "Solid work. Mia sounded calm on the loop. That's the job. — W. Hale",
+    "C": "Acceptable. Tighten up the procedures. — W. Hale",
+    "D": "Sloppy. Somebody up there is depending on you. — W. Hale",
+    "F": "We'll talk tomorrow. Get some sleep. — W. Hale"
+  },
+  "endings": {
+    "signal_acquired": {
+      "cliffhanger": ["SIGNAL ACQUIRED", "TO BE CONTINUED"],
+      "teaser": {
+        "era": "1980s",
+        "year": "1986",
+        "subtitle": "FIFTEEN YEARS LATER",
+        "captions": [
+          "OCTOBER 14, 1986 · LOA MISSION CONTROL",
+          "\"Director, this is Atlas Station. The pulse is back.\"",
+          "\"Same period. Eleven point two minutes.\"",
+          "\"And sir... it's still using your voice.\""
+        ],
+        "title": "GROUND CONTROL",
+        "footer": "DECADE II · 1979 — 1988 · COMING LATER"
+      }
+    }
+  }
+}

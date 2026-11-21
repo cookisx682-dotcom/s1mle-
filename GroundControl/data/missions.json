@@ -1,0 +1,223 @@
+{
+  "map": {"width": 12, "height": 8, "home": [2, 6]},
+  "landmark_names": ["Twin Craters", "Dorsa Ridge", "Boulder Field", "Sinuous Rille", "Dark Halo Pit", "Lone Peak", "Glass Crater", "Shadow Ridge", "Block Field", "Ghost Channel"],
+  "directions": {"north": [0, -1], "south": [0, 1], "east": [1, 0], "west": [-1, 0]},
+  "distance_words": {"1": "one grid", "2": "two grids"},
+  "near_lines": ["Close... the site's one grid over, I can see it from here.", "Almost. It's right next to me, wrong square."],
+  "wrong_lines": ["Nothing here, Ground. That walk cost me air.", "Negative. Wrong spot. Check the map again?", "I'm standing on bare regolith. Where now?"],
+  "ok_lines": ["Done. Next step?", "Copy. Next.", "Okay... that worked. What's next?"],
+  "bad_lines": ["Sparks! That wasn't the right step.", "Whoa — that tripped something. Not that one.", "Negative, that made it worse."],
+  "templates": [
+    {
+      "id": "nav_survey",
+      "type": "navigation",
+      "random": true,
+      "weight": 3,
+      "title": "Photo survey",
+      "brief": [
+        "Ground, Science wants a photo survey {dist} {dir} of the {landmark}. Which grid?",
+        "Next stop: survey panorama {dist} {dir} of the {landmark}. Point me there?"
+      ],
+      "rover_cost": 1.0,
+      "walk_cost": 3.0,
+      "wrong_cost": 3.0,
+      "max_attempts": 3,
+      "success_lines": ["Panorama done. Pretty out here, Ground.", "Got the frames. Heading back."],
+      "fail_lines": ["I'm calling it, Ground. We'll try the survey another night."],
+      "card": {"type": "photo", "title": "Survey #{n}", "text": "Panorama taken {dist} {dir} of the {landmark}. Nothing unusual."},
+      "on_success": [{"type": "trust", "value": 2}],
+      "on_fail": [{"type": "trust", "value": -3}]
+    },
+    {
+      "id": "nav_sample",
+      "type": "navigation",
+      "random": true,
+      "weight": 3,
+      "title": "Core sample",
+      "brief": [
+        "Geology wants a core {dist} {dir} of the {landmark}. Where do I go?",
+        "Sample request: {dist} {dir} of the {landmark}. Your call, Ground."
+      ],
+      "rover_cost": 1.0,
+      "walk_cost": 3.0,
+      "wrong_cost": 3.5,
+      "max_attempts": 3,
+      "success_lines": ["Core's in the bag.", "Sample secured. Logging it now."],
+      "fail_lines": ["Too much walking, Ground. I'm heading home."],
+      "card": {"type": "sample", "title": "Core #{n}", "text": "Core taken {dist} {dir} of the {landmark}. Ordinary mare basalt."},
+      "on_success": [{"type": "trust", "value": 2}],
+      "on_fail": [{"type": "trust", "value": -3}]
+    },
+    {
+      "id": "nav_instrument",
+      "type": "navigation",
+      "random": true,
+      "weight": 2,
+      "title": "Instrument check",
+      "brief": ["The heat-flow probe {dist} {dir} of the {landmark} stopped reporting. Guide me to it?"],
+      "rover_cost": 1.0,
+      "walk_cost": 3.0,
+      "wrong_cost": 3.0,
+      "max_attempts": 3,
+      "success_lines": ["Found it. Cable was just loose. It's talking again."],
+      "fail_lines": ["Can't find the probe. Let's leave it for daylight."],
+      "on_success": [{"type": "trust", "value": 2}],
+      "on_fail": [{"type": "trust", "value": -2}]
+    },
+    {
+      "id": "repair_rover",
+      "type": "repair",
+      "random": true,
+      "weight": 2,
+      "title": "Rover power coupling",
+      "manual": "LRV MANUAL 4-B · POWER COUPLING RESET",
+      "brief": "Ground, the rover's power coupling keeps dropping out. Got the manual handy? Talk me through it.",
+      "steps": [
+        "Set rover master switch to OFF",
+        "Open the battery cover",
+        "Disconnect coupling B",
+        "Brush the dust off the pins",
+        "Reconnect coupling B",
+        "Set rover master switch to ON"
+      ],
+      "distractors": ["Tap the battery casing", "Reverse the coupling polarity"],
+      "max_mistakes": 3,
+      "mistake_effects": [{"type": "power", "value": -5}],
+      "success_lines": ["Coupling's solid. Rover's purring."],
+      "fail_lines": ["It's fried, Ground. Rover's off until someone fixes it properly."],
+      "on_success": [{"type": "trust", "value": 2}],
+      "on_fail": [{"type": "system", "name": "rover", "value": false}, {"type": "trust", "value": -3}]
+    },
+    {
+      "id": "repair_antenna",
+      "type": "repair",
+      "random": true,
+      "weight": 2,
+      "title": "High-gain antenna drive",
+      "manual": "COMMS MANUAL 2-C · HGA DRIVE REALIGNMENT",
+      "brief": "Your voice keeps cutting out — the high-gain antenna is drifting. Walk me through the realignment?",
+      "steps": [
+        "Switch comms to the omni antenna",
+        "Unlock the antenna drive clamp",
+        "Rotate the dish to azimuth mark 214",
+        "Lock the drive clamp",
+        "Switch comms back to high-gain"
+      ],
+      "distractors": ["Rotate the dish to azimuth mark 241", "Cycle the transmitter power"],
+      "max_mistakes": 3,
+      "mistake_effects": [{"type": "time", "minutes": 10}],
+      "success_lines": ["Loud and clear now, Ground."],
+      "fail_lines": ["It's going to keep drifting. We'll live with it."],
+      "on_success": [{"type": "trust", "value": 2}],
+      "on_fail": [{"type": "trust", "value": -2}]
+    },
+    {
+      "id": "repair_scrubber",
+      "type": "repair",
+      "random": true,
+      "weight": 2,
+      "title": "CO2 scrubber cartridge",
+      "manual": "ECS MANUAL 1-A · LiOH CARTRIDGE SWAP",
+      "brief": "CO2 alarm in the habitat. I need to swap the scrubber cartridge — read me the procedure?",
+      "steps": [
+        "Close the cabin air valve",
+        "Unlatch the old LiOH cartridge",
+        "Seat the new cartridge, arrow up",
+        "Latch the cartridge",
+        "Open the cabin air valve"
+      ],
+      "distractors": ["Seat the new cartridge, arrow down", "Vent the cabin to purge CO2"],
+      "max_mistakes": 3,
+      "mistake_effects": [{"type": "oxygen", "value": -2, "waste": true}],
+      "success_lines": ["CO2 dropping. I can breathe easy. Literally."],
+      "fail_lines": ["I'll keep the old cartridge running. Not ideal."],
+      "on_success": [{"type": "trust", "value": 3}],
+      "on_fail": [{"type": "oxygen", "value": -5, "waste": true}, {"type": "trust", "value": -3}]
+    },
+    {
+      "id": "nav_site_alpha",
+      "type": "navigation",
+      "story": true,
+      "title": "Core sample — Site Alpha",
+      "landmarks": [
+        {"name": "Twin Craters", "x": 3, "y": 2},
+        {"name": "Boulder Field", "x": 8, "y": 3},
+        {"name": "Rille Bend", "x": 6, "y": 6, "kind": "rille"},
+        {"name": "Lone Peak", "x": 10, "y": 6}
+      ],
+      "target": [8, 1],
+      "brief": "Site Alpha is the big shadowed boulder two grids north of the Boulder Field. Which grid, Ground?",
+      "rover_cost": 1.0,
+      "walk_cost": 3.0,
+      "wrong_cost": 3.0,
+      "max_attempts": 3,
+      "success_lines": ["I'm at Site Alpha. Big boulder, deep shadow. Setting up the corer."],
+      "fail_lines": ["Found it on my own. Cost me some air, though."],
+      "on_complete": [{"type": "dialogue", "id": "d1_sample"}]
+    },
+    {
+      "id": "nav_geophone",
+      "type": "navigation",
+      "story": true,
+      "title": "Geophone array",
+      "landmarks": [
+        {"name": "Twin Craters", "x": 3, "y": 2},
+        {"name": "Site Alpha", "x": 8, "y": 1, "kind": "site"},
+        {"name": "Boulder Field", "x": 8, "y": 3},
+        {"name": "Rille Bend", "x": 6, "y": 6, "kind": "rille"}
+      ],
+      "target": [5, 1],
+      "brief": "Ruth wants the geophones three grids west of Site Alpha, out on the flat. Guide me in?",
+      "rover_cost": 1.0,
+      "walk_cost": 3.0,
+      "wrong_cost": 3.0,
+      "max_attempts": 3,
+      "success_lines": ["Geophones are down. Listening... oh. Ground, are you getting this?"],
+      "fail_lines": ["I put them down somewhere close enough. Listening..."],
+      "card_id": "c_geophone",
+      "on_fail": [{"type": "card", "id": "c_geophone"}]
+    },
+    {
+      "id": "nav_rille",
+      "type": "navigation",
+      "story": true,
+      "title": "The glint",
+      "landmarks": [
+        {"name": "Site Alpha", "x": 8, "y": 1, "kind": "site"},
+        {"name": "Boulder Field", "x": 8, "y": 3},
+        {"name": "Rille Bend", "x": 6, "y": 6, "kind": "rille"},
+        {"name": "Lone Peak", "x": 10, "y": 6}
+      ],
+      "target": [7, 6],
+      "brief": "The glint was one grid east of Rille Bend, down in the channel. Talk me down?",
+      "rover_cost": 1.0,
+      "walk_cost": 3.0,
+      "wrong_cost": 3.0,
+      "max_attempts": 3,
+      "success_lines": ["I'm in the channel. Ground... I see it."],
+      "fail_lines": ["Found the way down myself. Ground... I see it."],
+      "on_complete": [{"type": "flag", "name": "probe_seen"}, {"type": "dialogue", "id": "d3_probe"}]
+    },
+    {
+      "id": "repair_probe",
+      "type": "repair",
+      "story": true,
+      "title": "Unit 00 access panel",
+      "manual": "LOA FIELD MANUAL 00-A · UNIT 00 ACCESS",
+      "brief": "It's in our own manual index, Ground. 'Unit 00'. Read me the procedure. Slowly.",
+      "steps": [
+        "Brush the dust off the access panel",
+        "Unscrew the four corner bolts",
+        "Lift the panel by the lower edge",
+        "Pull the brass ring inside",
+        "Press the red switch"
+      ],
+      "distractors": ["Pry the panel open with the hammer", "Cut the bundled cable"],
+      "max_mistakes": 4,
+      "mistake_effects": [{"type": "oxygen", "value": -2, "waste": true}],
+      "success_lines": ["Panel's open. Something inside just... started turning."],
+      "fail_lines": ["I forced it. It's open. Something inside is turning."],
+      "on_complete": [{"type": "dialogue", "id": "d3_voice_help"}]
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "crises": {
+    "c_o2_spike": {
+      "title": "Suit pressure spike",
+      "text": "Mia's suit regulator reads 6.2 psi and climbing. Her breathing is getting fast.",
+      "timer": 18,
+      "mia_line": "Ground, my suit pressure is climbing — what do I do?",
+      "options": [
+        {"text": "Open the purge valve, slowly", "correct": true},
+        {"text": "Switch to the backup O2 tank", "correct": false},
+        {"text": "Hold still and wait it out", "correct": false}
+      ],
+      "success_line": "Pressure's dropping... okay. Okay. Thanks, Ground.",
+      "fail_line": "That vented a lot of oxygen. I'm okay. I think.",
+      "success_effects": [{"type": "trust", "value": 3}],
+      "fail_effects": [{"type": "oxygen", "value": -6, "waste": true}, {"type": "trust", "value": -3}]
+    },
+    "c_signal_drop": {
+      "title": "Signal dropout",
+      "text": "S-band carrier lost. Telemetry frozen. The voice loop is static.",
+      "timer": 15,
+      "mia_line": "Ground, you're breaking u—",
+      "options": [
+        {"text": "Switch the uplink to the omni antenna", "correct": true},
+        {"text": "Boost transmitter power to maximum", "correct": false, "effects": [{"type": "power", "value": -8}]},
+        {"text": "Re-send the last command block", "correct": false}
+      ],
+      "success_line": "There you are. Don't scare me like that.",
+      "fail_line": "...twenty minutes of static. I hate the quiet up here.",
+      "timeout_line": "...Ground? ...Ground? There you are. Twenty minutes of nothing.",
+      "success_effects": [{"type": "trust", "value": 2}],
+      "fail_effects": [{"type": "time", "minutes": 20}, {"type": "trust", "value": -2}]
+    },
+    "c_micrometeorite": {
+      "title": "Micrometeorite strike",
+      "text": "Impact on the habitat skin. Pressure falling in module B.",
+      "timer": 20,
+      "mia_line": "Something hit the hab! Module B is losing pressure!",
+      "options": [
+        {"text": "Seal hatch B, patch it from the inside", "correct": true},
+        {"text": "Evacuate to the rover", "correct": false},
+        {"text": "Raise cabin pressure to compensate", "correct": false}
+      ],
+      "success_line": "Patch is holding. My hands are shaking, but it's holding.",
+      "fail_line": "We lost a lot of air before I got it sealed.",
+      "success_effects": [{"type": "trust", "value": 3}],
+      "fail_effects": [{"type": "oxygen", "value": -8, "waste": true}, {"type": "power", "value": -5}, {"type": "trust", "value": -3}]
+    },
+    "c_power_surge": {
+      "title": "Power bus overvolt",
+      "text": "Main bus B overvolt. Breakers are about to trip across the habitat.",
+      "timer": 16,
+      "mia_line": "Ground, the breaker panel is buzzing. Lights are flickering!",
+      "options": [
+        {"text": "Shed the heater load now", "correct": true, "effects": [{"type": "system", "name": "heat", "value": false}]},
+        {"text": "Reset every breaker at once", "correct": false},
+        {"text": "Ignore it, it'll settle", "correct": false}
+      ],
+      "success_line": "Bus is stable. It's getting chilly though — turn the heat back on when you can.",
+      "fail_line": "Everything tripped. I'm in the dark for a minute.",
+      "success_effects": [{"type": "trust", "value": 2}],
+      "fail_effects": [{"type": "power", "value": -12}, {"type": "trust", "value": -2}]
+    }
+  },
+  "visitors": {
+    "v_hale_d1": {
+      "name": "Walt Hale",
+      "role": "Flight Director",
+      "color": "#e6e1d3",
+      "text": "Evening. You're the new night CAPCOM? Mia's on day twelve of thirty. Keep her breathing, keep her busy, keep the logs clean. The board behind you is yours — pin anything worth remembering. Here's her brief.",
+      "effects": [{"type": "card", "id": "c_charter"}, {"type": "card", "id": "c_selene_brief"}]
+    },
+    "v_ruth_tip": {
+      "name": "Ruth Okafor",
+      "role": "Systems Engineer",
+      "color": "#9b7bff",
+      "text": "A rock warmer than the shadow it sits in? Pin both cards to the board and tie them with string — click one, then the other. That's how I think, anyway.",
+      "effects": []
+    },
+    "v_ruth_d2": {
+      "name": "Ruth Okafor",
+      "role": "Systems Engineer",
+      "color": "#9b7bff",
+      "text": "The seismometer's been chattering all day. Hale says thermal creep. Funny kind of creep that keeps perfect time. Here's today's log.",
+      "effects": [{"type": "card", "id": "c_pse_d2"}]
+    },
+    "v_ruth_hint_d2": {
+      "name": "Ruth Okafor",
+      "role": "Systems Engineer",
+      "color": "#9b7bff",
+      "text": "Three things beat at the same rhythm: the tremor log, the hum in her radio... and whatever the geophones heard. Tie the first two together, then tie that to the geophones.",
+      "effects": []
+    },
+    "v_hale_d3": {
+      "name": "Walt Hale",
+      "role": "Flight Director",
+      "color": "#e6e1d3",
+      "text": "HQ wants Site Alpha off-limits. She stays inside the two-kilometer ring tonight. No detours. I don't make the rules, I just enforce them. Understood?",
+      "button": "UNDERSTOOD",
+      "effects": [{"type": "flag", "name": "perimeter_order"}]
+    },
+    "v_ruth_d3": {
+      "name": "Ruth Okafor",
+      "role": "Systems Engineer",
+      "color": "#9b7bff",
+      "text": "I didn't see that fax. I didn't see anything. ...Bring her home safe.",
+      "effects": [{"type": "trust", "value": 2}]
+    }
+  },
+  "faxes": {
+    "f_d1_thermal": {
+      "from": "Surface Science Office",
+      "ref": "SSO-71-031",
+      "title": "Thermal survey — Site Alpha",
+      "body": "Infrared pass complete. Shadowed regolith at Site Alpha measured at -23 °C, consistent with models. No anomalies expected.",
+      "card": "c_thermal_alpha"
+    },
+    "f_d1_pse": {
+      "from": "Seismic Network Desk",
+      "ref": "PSE-N12",
+      "title": "Passive seismic log — Night 12",
+      "body": "Three micro-tremors recorded at 02:14, 02:25 and 02:36 station time. Classified as thermal. Filed for completeness.",
+      "card": "c_pse_d1"
+    },
+    "f_d2_supply": {
+      "from": "Logistics",
+      "ref": "LOG-71-077",
+      "title": "Resupply delayed",
+      "body": "Selene-2 cargo lander slips to March 19. Crew is to conserve power and consumables until further notice.",
+      "card": "c_supply"
+    },
+    "f_d2_ignore": {
+      "from": "Office of the Deputy Administrator",
+      "ref": "HQ-71-114 · EYES ONLY",
+      "title": "RE: PSE anomaly",
+      "body": "The periodic signal is an instrument fault. Log it as such. It is not to be discussed on the open loop, and the crew is not to be informed. Acknowledge.",
+      "card": "c_hq_order",
+      "required": true,
+      "choices": [
+        {"label": "COMPLY", "effects": [{"type": "flag", "name": "complied_d2"}]},
+        {"label": "PUSH BACK", "effects": [{"type": "flag", "name": "questioned_hq"}, {"type": "notify", "text": "HQ: 'Noted.' Nothing else.", "kind": "alert"}]}
+      ]
+    },
+    "f_d3_order": {
+      "from": "Office of the Deputy Administrator",
+      "ref": "HQ-71-120 · PRIORITY",
+      "title": "DIRECT ORDER",
+      "body": "The crew is to leave the object undisturbed and return to the habitat immediately. Do not open, move or photograph it further. This is a direct order.",
+      "required": true,
+      "choices": [
+        {"label": "RELAY THE ORDER", "effects": [{"type": "flag", "name": "obeyed_hq"}, {"type": "dialogue", "id": "d3_obey"}]},
+        {"label": "HELP HER OPEN IT", "effects": [{"type": "flag", "name": "disobeyed_hq"}, {"type": "trust", "value": 5}, {"type": "dialogue", "id": "d3_help"}]}
+      ]
+    }
+  }
+}

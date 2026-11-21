@@ -1,0 +1,271 @@
+{
+  "idle": {
+    "low": [
+      "Selene copies. Radio check good.",
+      "Loud and clear. Anything else?",
+      "Copy, Ground."
+    ],
+    "mid": [
+      "Loud and clear. Earth's half-lit tonight. Looks like a marble somebody dropped.",
+      "Copy. I'm counting rivets in the hab ceiling. There are two hundred and eleven.",
+      "Reading you five by five. Tell the coffee machine I miss it."
+    ],
+    "high": [
+      "Hey, Ground. I was hoping you'd call.",
+      "Five by five. You know, you're the best part of the night shift.",
+      "I'm here. Talk to me about anything. The quiet gets loud up here."
+    ]
+  },
+  "dialogues": {
+    "d1_intro": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "Ground, Selene. Loop check. ...You're not Daniels.",
+          "choices": [
+            {"text": "Negative, Selene. New night CAPCOM. Good to meet you, Mia.", "next": "warm", "effects": [{"type": "trust", "value": 5}]},
+            {"text": "Daniels rotated out. Let's keep the loop clean.", "next": "cold", "effects": [{"type": "trust", "value": -3}]},
+            {"text": "Daniels says hi. He also says you cheat at chess.", "next": "joke", "effects": [{"type": "trust", "value": 8}]}
+          ]
+        },
+        "warm": {"text": "'Mia.' Nobody's called me that in twelve days. Okay, new voice — you've got the monitors, I've got the dust.", "next": "task"},
+        "cold": {"text": "...Copy. Clean loop. Got it.", "next": "task"},
+        "joke": {"text": "Ha! He moves his king like it owes him money. Okay. I like you already.", "next": "task"},
+        "task": {
+          "text": "Tonight's plan: a core sample at Site Alpha. I describe the ground, you read the terrain map and send me the right way. Deal?",
+          "choices": [
+            {"text": "Deal. Terrain map is up on the monitors.", "next": "go"},
+            {"text": "Deal. And if the rover isn't needed, I'll switch it off to save power.", "next": "go", "effects": [{"type": "trust", "value": 2}]}
+          ]
+        },
+        "go": {
+          "text": "Copy. Suiting up. Call me when you've found it on the map.",
+          "effects": [{"type": "mission", "template": "nav_site_alpha"}],
+          "end": true
+        }
+      }
+    },
+    "d1_sample": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {"text": "Ground, I'm in the boulder's shadow. Taking the core now.", "next": "warm"},
+        "warm": {
+          "text": "Huh. That's... strange. It's warm. I can feel it through the glove. Rocks in shadow should be colder than a freezer.",
+          "effects": [{"type": "card", "id": "c_sample_14"}],
+          "choices": [
+            {"text": "Bag it. We'll log it as Sample #14.", "next": "bag"},
+            {"text": "Are you okay? Check your glove heater.", "next": "glove", "effects": [{"type": "trust", "value": 5}]}
+          ]
+        },
+        "bag": {"text": "Bagged and tagged. Sample #14. Heading back to the lander.", "end": true},
+        "glove": {"text": "Heater's off. It's the rock. ...Thanks for asking, though.", "end": true}
+      }
+    },
+    "d1_warm": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "You saw it too, didn't you? The thermal survey. That rock shouldn't be warm.",
+          "choices": [
+            {"text": "Probably residual sunlight.", "next": "skeptic", "effects": [{"type": "trust", "value": -2}]},
+            {"text": "I saw it. I'm keeping an eye on it.", "next": "trust", "effects": [{"type": "trust", "value": 5}]}
+          ]
+        },
+        "skeptic": {"text": "In a shadow that hasn't seen the sun in a week? ...Sure. Residual.", "end": true},
+        "trust": {"text": "Good. I don't like being the only one who notices things up here.", "end": true}
+      }
+    },
+    "d1_goodnight": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "Selene going to sleep period. Night, Ground.",
+          "variants": [
+            {"if": {"min_trust": 65}, "text": "Ground, that's my sleep period. You were good company tonight. Same time tomorrow?"},
+            {"if": {"max_trust": 34}, "text": "Sleep period. ...Selene out."}
+          ],
+          "choices": [
+            {"text": "Sleep well, Mia. Same time tomorrow.", "next": "bye", "effects": [{"type": "trust", "value": 2}]},
+            {"text": "Ground copies. Out.", "next": "bye"}
+          ]
+        },
+        "bye": {
+          "speaker": "LOOP",
+          "text": "(The loop clicks over to carrier hiss. Somewhere under it, very faintly, something hums.)",
+          "effects": [{"type": "delay", "seconds": 6, "effects": [{"type": "end_day"}]}],
+          "end": true
+        }
+      }
+    },
+    "d2_morning": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {"text": "Morning, Ground. Or night. Whatever it is down there.", "next": "hum"},
+        "hum": {
+          "text": "I didn't sleep much. When the loop goes quiet there's a hum in my headset. Comes and goes. Like breathing.",
+          "choices": [
+            {"text": "I'll have Comms look at it.", "next": "comms", "effects": [{"type": "trust", "value": 3}]},
+            {"text": "Describe it exactly. Timing, pitch.", "next": "detail", "effects": [{"type": "trust", "value": 6}]},
+            {"text": "Probably your suit radio. Ignore it.", "next": "dismiss", "effects": [{"type": "trust", "value": -5}]}
+          ]
+        },
+        "comms": {"text": "Thanks. Tell them it swells about every ten, eleven minutes.", "next": "plan"},
+        "detail": {"text": "Low. Like a cello far away. It swells and fades every eleven minutes, give or take. I timed it with my watch.", "next": "plan"},
+        "dismiss": {"text": "...Right. My suit radio. Sure.", "next": "plan"},
+        "plan": {
+          "text": "Anyway. Ruth wants a geophone array out near Site Alpha. Guide me in?",
+          "effects": [{"type": "card", "id": "c_radio_hum"}, {"type": "mission", "template": "nav_geophone"}],
+          "end": true
+        }
+      }
+    },
+    "d2_signal": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "Ground? You've gone quiet for a while. Is something wrong down there?",
+          "choices": [
+            {"text": "Mia, there's a signal under Site Alpha. Something is transmitting.", "next": "truth", "effects": [{"type": "trust", "value": 10}, {"type": "flag", "name": "told_truth"}]},
+            {"text": "Instrument fault. Nothing to worry about.", "next": "lie", "effects": [{"type": "trust", "value": -8}, {"type": "flag", "name": "lied_to_mia"}]},
+            {"text": "I can't talk about it on this loop. Not yet.", "next": "vague", "effects": [{"type": "trust", "value": 3}]}
+          ]
+        },
+        "truth": {"text": "...The hum. It's the hum, isn't it. Thank you for telling me. I know you weren't supposed to.", "end": true},
+        "lie": {
+          "text": "Copy. Instrument fault.",
+          "variants": [{"if": {"min_trust": 60}, "text": "You're a terrible liar, Ground. But okay. I'll pretend."}],
+          "end": true
+        },
+        "vague": {"text": "Understood. When you can — tell me first.", "end": true}
+      }
+    },
+    "d2_night": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "Ground... the hum is louder tonight. Every eleven minutes. If I close my eyes it almost sounds like... words.",
+          "choices": [
+            {"text": "Get some sleep, Mia. I'm right here.", "next": "bye", "effects": [{"type": "trust", "value": 3}]},
+            {"text": "Leave the tape recorder running tonight.", "next": "bye", "effects": [{"type": "flag", "name": "recorder_on"}]}
+          ]
+        },
+        "bye": {
+          "speaker": "LOOP",
+          "text": "(Selene-1 enters sleep period. The hum swells. Fades. Swells.)",
+          "effects": [{"type": "delay", "seconds": 6, "effects": [{"type": "end_day"}]}],
+          "end": true
+        }
+      }
+    },
+    "d3_glint": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "Ground. Sunrise over Rille Bend. I saw a glint down there. Metal. Nothing of ours should be in that rille.",
+          "variants": [{"if": {"flag": "found_signal"}, "text": "Ground. I couldn't sleep, so I watched sunrise over Rille Bend. There was a glint at the bottom. Metal. Right where the hum is loudest."}],
+          "choices": [
+            {"text": "Hale wants you inside the ring. ...But take a look. Quietly.", "next": "go", "effects": [{"type": "trust", "value": 5}, {"type": "flag", "name": "sent_to_rille"}]},
+            {"text": "Negative. HQ says stay inside the perimeter.", "next": "stay", "effects": [{"type": "trust", "value": -5}]}
+          ]
+        },
+        "go": {"text": "Thank you. Talk me down the slope?", "next": "mission"},
+        "stay": {
+          "text": "Copy... I'm still going. I need to know. Will you at least guide me?",
+          "variants": [{"if": {"min_trust": 60}, "text": "I hear you. And I'm going anyway. Better with you than without you, Ground."}],
+          "next": "mission"
+        },
+        "mission": {
+          "text": "Plotting the route. The terrain map should show Rille Bend.",
+          "effects": [{"type": "mission", "template": "nav_rille"}],
+          "end": true
+        }
+      }
+    },
+    "d3_probe": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "Ground... it's a probe. Old. Pitted. Half buried. Taking pictures.",
+          "effects": [{"type": "card", "id": "c_probe_photo"}],
+          "next": "plaque"
+        },
+        "plaque": {
+          "text": "There's a plaque. It's... it's our logo, Ground. LOA. 'GROUND CONTROL — UNIT 00.' And a year. Nineteen fifty-eight.",
+          "effects": [{"type": "card", "id": "c_probe_plaque"}],
+          "choices": [
+            {"text": "That's impossible. The agency didn't exist in '58.", "next": "hum", "effects": [{"type": "trust", "value": 2}]},
+            {"text": "Don't touch anything. Just describe it.", "next": "hum"}
+          ]
+        },
+        "hum": {"text": "I know. It's humming, Ground. Through my boots. Eleven minutes, right on time.", "end": true}
+      }
+    },
+    "d3_obey": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "...Copy, Ground. Leaving it. Heading back to the habitat.",
+          "variants": [{"if": {"min_trust": 70}, "text": "I trust you. If you say walk away, I'll walk away."}],
+          "next": "stop"
+        },
+        "stop": {"text": "Wait. Ground, the hum just stopped. ...There's something on my loop now. Not the hum. A voice.", "next": "voice"},
+        "voice": {"speaker": "LOOP", "text": "\"...Selene, this is Ground Control. Do you copy? Selene, this is Ground Control...\"", "effects": [{"type": "sound", "name": "signal"}], "next": "you"},
+        "you": {
+          "text": "That's... that's you, Ground. That's your voice. But you didn't say anything.",
+          "choices": [
+            {"text": "Mia, I didn't transmit.", "next": "final"},
+            {"text": "Keep talking. Stay with me.", "next": "final", "effects": [{"type": "trust", "value": 3}]}
+          ]
+        },
+        "final": {
+          "text": "Then who did?",
+          "effects": [{"type": "ending", "id": "signal_acquired"}, {"type": "delay", "seconds": 5, "effects": [{"type": "end_day"}]}],
+          "end": true
+        }
+      }
+    },
+    "d3_help": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {
+          "text": "You're serious? ...Okay. Okay. There's an access panel on the side. Check your manuals — if it's our hardware, there's a procedure.",
+          "effects": [{"type": "mission", "template": "repair_probe"}],
+          "end": true
+        }
+      }
+    },
+    "d3_voice_help": {
+      "speaker": "MIA",
+      "start": "start",
+      "nodes": {
+        "start": {"text": "Panel's open. There's a reel-to-reel inside. It's turning, Ground. It's playing something.", "next": "voice"},
+        "voice": {"speaker": "LOOP", "text": "\"...Selene, this is Ground Control. Do you copy? Selene, this is Ground Control...\"", "effects": [{"type": "sound", "name": "signal"}], "next": "you"},
+        "you": {
+          "text": "That's your voice. On a tape older than both of us. Ground... who ARE you?",
+          "variants": [{"if": {"min_trust": 70}, "text": "That's you. That's your voice, Ground. On a tape from 1958. ...I'm not scared. I'm with you."}],
+          "choices": [
+            {"text": "I don't know.", "next": "final"},
+            {"text": "Mia — bring the tape home.", "next": "final", "effects": [{"type": "trust", "value": 3}]}
+          ]
+        },
+        "final": {
+          "speaker": "LOOP",
+          "text": "(Carrier lock. SIGNAL ACQUIRED.)",
+          "effects": [{"type": "ending", "id": "signal_acquired"}, {"type": "delay", "seconds": 5, "effects": [{"type": "end_day"}]}],
+          "end": true
+        }
+      }
+    }
+  }
+}

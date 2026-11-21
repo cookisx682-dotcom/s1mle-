@@ -1,0 +1,58 @@
+{
+  "wrong_link_penalty_minutes": 20,
+  "deductions": [
+    {
+      "id": "ded_warm_rock",
+      "cards": ["c_sample_14", "c_thermal_alpha"],
+      "title": "A Warm Stone",
+      "text": "Sample #14 was warm inside a -23 °C shadow. Something underneath is giving off heat.",
+      "effects": [{"type": "dialogue", "id": "d1_warm"}]
+    },
+    {
+      "id": "ded_period",
+      "cards": ["c_pse_d1", "c_pse_d2"],
+      "title": "It Keeps Time",
+      "text": "Night 12 and Night 13 share the same 11.2-minute rhythm. Thermal creep doesn't keep time.",
+      "effects": [{"type": "notify", "text": "Ruth will want to see this.", "kind": "story"}]
+    },
+    {
+      "id": "ded_same_source",
+      "cards": ["c_pse_d2", "c_radio_hum"],
+      "title": "Two Channels, One Source",
+      "text": "The ground shakes and the radio hums on the same 11.2-minute beat. One source.",
+      "effects": []
+    },
+    {
+      "id": "ded_transmitter",
+      "cards": ["ded_same_source", "c_geophone"],
+      "title": "Something Is Transmitting",
+      "text": "A structured pulse — 3-1-4 — from 40 m beneath Site Alpha. Not a fault. A signal.",
+      "effects": [
+        {"type": "flag", "name": "found_signal"},
+        {"type": "fax", "id": "f_d2_ignore"},
+        {"type": "dialogue", "id": "d2_signal"}
+      ]
+    },
+    {
+      "id": "ded_cover_up",
+      "cards": ["c_hq_order", "ded_period"],
+      "title": "They Knew",
+      "text": "HQ called it a fault before anybody filed a fault report. Someone was expecting this.",
+      "effects": [{"type": "flag", "name": "suspects_hq"}]
+    },
+    {
+      "id": "ded_older",
+      "cards": ["c_probe_plaque", "c_charter"],
+      "title": "Older Than Us",
+      "text": "The agency was chartered in 1969. Its own plaque on the Moon says 1958.",
+      "effects": [{"type": "flag", "name": "knows_older"}, {"type": "trust", "value": 3}]
+    },
+    {
+      "id": "ded_source_found",
+      "cards": ["c_probe_photo", "ded_transmitter"],
+      "title": "The Source",
+      "text": "The probe sits right above the pulse. It was never buried deep — it was waiting.",
+      "effects": [{"type": "flag", "name": "source_found"}]
+    }
+  ]
+}

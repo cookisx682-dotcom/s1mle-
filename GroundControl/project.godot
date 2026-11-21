@@ -1,0 +1,45 @@
+; Engine configuration file.
+; Ground Control — demo v0.1 (Decade I: 1969–1972)
+
+config_version=5
+
+[application]
+
+config/name="Ground Control"
+config/description="A first-person story game set in a space agency control room, 1969 · · · 2069."
+config/version="0.1"
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+SaveSystem="*res://scripts/autoload/save_system.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
+GameState="*res://scripts/autoload/game_state.gd"
+TimeManager="*res://scripts/autoload/time_manager.gd"
+ResourceManager="*res://scripts/autoload/resource_manager.gd"
+BoardManager="*res://scripts/autoload/board_manager.gd"
+DialogueManager="*res://scripts/autoload/dialogue_manager.gd"
+MissionGenerator="*res://scripts/autoload/mission_generator.gd"
+EventManager="*res://scripts/autoload/event_manager.gd"
+AchievementManager="*res://scripts/autoload/achievement_manager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[editor]
+
+export/convert_text_resources_to_binary=false
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+anti_aliasing/quality/msaa_3d=0
+environment/defaults/default_clear_color=Color(0.02, 0.03, 0.06, 1)
