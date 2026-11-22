@@ -253,6 +253,23 @@ button.big.att { background: #f1d9a0; border-color: var(--stamp-red); color: var
 #ending .cap { color: #e3cf97; }
 #menuBg { filter: blur(3px) brightness(.4) sepia(.5); }
 
+/* one-screen layout: goal bar, pannable room, one action card */
+#goal { display: block; width: 100%; border: 0; border-bottom: 3px solid #2a251f; box-shadow: none; background: #f1d9a0; color: var(--ink); font-family: var(--f-title); font-size: 14px; line-height: 1.3; padding-block: 9px; text-align: left; }
+#goal b { color: var(--stamp-red); }
+#goal.here { background: #d9e6c2; }
+#goal:empty { display: none; }
+#stName { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); font-family: var(--f-title); font-size: 11px; color: var(--ink); background: var(--paper); padding: 3px 8px; box-shadow: 2px 2px 0 rgba(0,0,0,.5); pointer-events: none; white-space: nowrap; }
+.arr { position: absolute; top: 50%; transform: translateY(-50%); font-family: var(--f-title); font-size: 10px; padding: 10px 6px; background: rgba(228,217,187,.92); max-width: 34%; text-align: center; line-height: 1.2; }
+.arr.l { left: max(4px, env(safe-area-inset-left, 0px)); } .arr.r { right: max(4px, env(safe-area-inset-right, 0px)); }
+.arr.att { background: #f1d9a0; color: var(--stamp-red); border-color: var(--stamp-red); animation: nudge 1.2s ease-in-out infinite; }
+.arr:active { transform: translateY(-50%) translate(2px, 2px); }
+#notes { top: auto; bottom: 6px; left: 6px; right: auto; max-width: 70%; }
+#notes div { font-size: 15px; background: rgba(228,217,187,.93); color: var(--ink) !important; text-shadow: none; padding: 1px 6px; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
+#sub { display: none; }
+.speech { background: var(--paper); color: var(--ink); padding: 10px 12px; box-shadow: 3px 4px 0 rgba(0,0,0,.4); font-size: 21px; line-height: 1.2; }
+.speech .who { font-family: var(--f-title); font-size: 12px; color: var(--stamp-red); display: block; margin-bottom: 3px; }
+.speech .prev { color: #7b715d; font-size: 17px; margin-bottom: 6px; }
+.speech.you .who { color: #2b3f6e; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -262,9 +279,9 @@ button.big.att { background: #f1d9a0; border-color: var(--stamp-red); color: var
     <div class="meter"><span style="color:var(--green)">O2</span><i><b id="o2b" style="background:var(--green);width:100%"></b></i><span style="color:var(--amber)">PWR</span><i><b id="pwb" style="background:var(--amber);width:100%"></b></i></div>
     <button id="pauseBtn" aria-label="Pause">II</button>
   </div>
-  <div id="sceneWrap"><canvas id="scene" width="320" height="180"></canvas><div id="notes"></div><div id="sub"></div></div>
+  <button id="goal" class="gut"></button>
+  <div id="sceneWrap"><canvas id="scene" width="320" height="180"></canvas><div id="stName"></div><button id="arL" class="arr l"></button><button id="arR" class="arr r"></button><div id="notes"></div><div id="sub"></div></div>
   <div id="panel" class="gut"></div>
-  <nav id="tabs"></nav>
 </div>
 
 <div id="menu" class="layer gut">
@@ -402,7 +419,7 @@ function nextToast() {
 function note(text, kind = "info") {
   const c = { info: "var(--cyan)", card: "var(--violet)", alert: "var(--amber)", story: "var(--green)", radio: "var(--green)" }[kind] || "var(--cyan)";
   const d = document.createElement("div"); d.style.color = c; d.textContent = text;
-  const n = $("#notes"); n.appendChild(d); while (n.children.length > 4) n.firstChild.remove();
+  const n = $("#notes"); n.appendChild(d); while (n.children.length > 2) n.firstChild.remove();
   setTimeout(() => d.remove(), 5200);
 }
 function sub(speaker, text) { const s = $("#sub"); s.textContent = speaker + ": " + text; s.style.color = speaker === "YOU" ? "var(--cyan)" : speaker === "LOOP" ? "var(--violet)" : "var(--green)"; subTimer = clamp(2 + text.length * .05, 3, 9); }
@@ -689,7 +706,7 @@ function finishDay(aborted) {
 }
 function newGame() { S = freshState(); store.del("gc_save"); startDay(); }
 function startDay() {
-  store.set("gc_save", snapshot()); paused = true; station = "console"; selCard = null; faxShown = null;
+  store.set("gc_save", snapshot()); paused = true; station = "console"; camT = camX = 2; selCard = null; faxShown = null;
   const d = day(); $("#menu").hidden = true;
   showLayer(`<div class="date">${esc(d.date)}</div><div class="subtitle" style="font-size:16px">${esc(d.title)}</div>` +
     `<div class="intro-body">${(d.intro || []).map(esc).join("<br><br>")}</div><div class="pulse">[ TAP TO CLOCK IN ]</div>`, () => { hideLayer(); beginDay(); });
@@ -802,7 +819,16 @@ function drawPhone(c, t) {
   R(c, 166, 94, 64, 20, "#9a968a"); R(c, 174, 84, 48, 10, "#f2efe6"); R(c, 176, 112, 44, 12, "#f2efe6");
   R(c, 222, 98, 4, 3, pendingFor("phone") && blinkOn(t) ? "#ff5a5f" : "#5cffb0");
 }
-const DRAW = { console: drawConsole, monitors: drawMonitors, board: drawBoard, window: drawWindow, phone: drawPhone };
+function drawMonitorsBig(c, t) {
+  room(c); R(c, 20, 140, 280, 10, "#2e3340"); R(c, 30, 150, 260, 30, "#454b59");
+  R(c, 6, 70, 44, 40, "#8c8670"); R(c, 10, 74, 36, 28, "#020805"); [[S?.o2 ?? 100, "#5cffb0"], [S?.pw ?? 100, "#ffb547"]].forEach(([v, cc], k) => { R(c, 13, 79 + k * 10, 30, 5, "#06241a"); R(c, 13, 79 + k * 10, 30 * clamp(v, 0, 100) / 100, 5, cc); });
+  R(c, 270, 70, 44, 40, "#8c8670"); R(c, 274, 74, 36, 28, "#1a1000"); for (let k = 0; k < 4; k++) R(c, 278 + k * 7, 78 + (k * 5) % 16, 3, 3, "#ffb547");
+  R(c, 56, 8, 208, 136, "#b6ab8b"); R(c, 60, 12, 200, 128, "#2a251f"); R(c, 64, 16, 192, 112, "#000");
+  if (S && S.inGame) { drawCam(); c.drawImage(camOff, 0, 0, 160, 96, 64, 16, 192, 112); }
+  for (let y = 16; y < 128; y += 3) R(c, 64, y, 192, 1, "rgba(0,0,0,.25)");
+  R(c, 140, 130, 40, 6, "#8c8670"); c.fillStyle = "#2a251f"; c.font = "6px monospace"; c.fillText("HELMET CAMERA", 136, 135);
+}
+const DRAW = { console: drawConsole, monitors: drawMonitorsBig, board: drawBoard, window: drawWindow, phone: drawPhone };
 
 // ------------------------------------------------------------------ panels
 function pendingFor(id) {
@@ -816,57 +842,82 @@ function pendingFor(id) {
   }
   return false;
 }
-function renderTabs() {
-  $("#tabs").innerHTML = STATIONS.map(([id, n]) => `<button data-s="${id}" class="${id === station ? "cur" : ""} ${pendingFor(id) ? "att" : ""}">${n}</button>`).join("");
-  $("#tabs").querySelectorAll("button").forEach(b => b.onclick = () => go(b.dataset.s));
+const SNAME = { board: "EVIDENCE BOARD", monitors: "SCREENS", console: "RADIO", window: "HALL WINDOW", phone: "FAX" };
+function goal() {
+  if (!S || !S.inGame) return null;
+  if (S.crisis) return { t: "EMERGENCY! Pick an answer fast.", s: null };
+  if (S.dlg || S.queue.length) return { t: "Mia is calling you. Answer her on the RADIO.", s: "console" };
+  if (S.visitor) return { t: S.visitor.name + " is at the HALL WINDOW. Go and listen.", s: "window" };
+  if (S.faxInbox.length) return { t: "New order from HQ on the FAX. Read it and stamp your answer.", s: "phone" };
+  const m = S.mission;
+  if (m && m.type === "navigation" && m.state === "active") return { t: "Mia needs directions. On SCREENS, tap the square on the map where she should go.", s: "monitors" };
+  if (m && m.state === "travel") return { t: "Mia is on her way. Wait a moment…", s: null };
+  if (m && m.type === "repair") return station === "console" ? { t: "Tell Mia the repair steps in the right order (the list is on SCREENS).", s: "console" } : { t: "Repair job: read the steps on SCREENS, then say them to Mia on the RADIO.", s: m.progress === 0 && station !== "monitors" ? "monitors" : "console" };
+  if (S.discovered.some(x => !S.pinned.includes(x))) return { t: "You got a new clue. Pin it on the EVIDENCE BOARD.", s: "board" };
+  if (DEDS.some(d => !S.deds.includes(d.id) && d.cards.every(c => S.pinned.includes(c)) && cond(d.if))) return { t: "Two clues on the BOARD belong together. Tap one, then the other, to tie them.", s: "board" };
+  if (S.pw < 35 && Object.values(S.sys).some(Boolean)) return { t: "Power is low! On the RADIO, switch off systems you don't need.", s: "console" };
+  return { t: "All quiet. Watch oxygen and power — something will happen soon.", s: null };
 }
-function go(id) { if (id === station) return; station = id; selCard = null; sfx("ui_click"); if (id === "console" && !S.dlg && S.queue.length && S.inGame) startDlg(); if (id === "phone" && S.faxInbox.length) { faxShown = S.faxInbox[0]; sfx("fax"); } dirty = true; $("#panel").scrollTop = 0; }
+function renderTabs() {
+  const i = STATIONS.findIndex(x => x[0] === station), G = goal(), gi = G && G.s ? STATIONS.findIndex(x => x[0] === G.s) : -1;
+  const arrow = (el, st, dir) => {
+    el.hidden = !st || !S?.inGame; if (el.hidden) return;
+    el.textContent = dir < 0 ? "◀ " + st[1] : st[1] + " ▶";
+    el.classList.toggle("att", gi >= 0 && Math.sign(gi - i) === dir);
+    el.onclick = () => go(st[0]);
+  };
+  arrow($("#arL"), STATIONS[i - 1], -1); arrow($("#arR"), STATIONS[i + 1], 1);
+  $("#stName").textContent = S?.inGame ? SNAME[station] : "";
+  const gb = $("#goal");
+  if (!G) { gb.innerHTML = ""; return; }
+  const here = !G.s || G.s === station;
+  gb.classList.toggle("here", here && !!G.s);
+  gb.innerHTML = `<b>${here ? (G.s ? "▼ DO IT BELOW:" : "►") : "► GO:"}</b> ${esc(G.t)}`;
+  gb.onclick = () => { if (G.s && G.s !== station) go(G.s); };
+}
+function go(id) { if (id === station || !STATIONS.some(x => x[0] === id)) return; station = id; camT = STATIONS.findIndex(x => x[0] === id); selCard = null; sfx("ui_click"); if (id === "console" && !S.dlg && S.queue.length && S.inGame) startDlg(); if (id === "phone" && S.faxInbox.length) { faxShown = S.faxInbox[0]; sfx("fax"); } dirty = true; $("#panel").scrollTop = 0; }
 
 function renderPanel() {
   const P = $("#panel"); if (!S) { P.innerHTML = ""; return; }
-  $("#app").classList.toggle("slim", station === "board" || station === "monitors");
   const keep = station === "console" ? null : P.scrollTop;
   P.innerHTML = ({ console: panelConsole, monitors: panelMonitors, board: panelBoard, window: panelWindow, phone: panelPhone })[station]();
   bindPanel(); if (keep != null) P.scrollTop = keep;
   if (station === "board") requestAnimationFrame(drawStrings);
-  if (station === "monitors") { drawMap(); drawCam(); }
+  if (station === "monitors") drawMap();
   const lg = P.querySelector(".log"); if (lg) lg.scrollTop = lg.scrollHeight;
   S.log.forEach(l => l.n = 0);
 }
 function panelConsole() {
-  const lines = S.log.slice(-40).map(l => `<p class="${l.n ? "new" : ""}"><span class="sp-${["MIA", "YOU", "LOOP"].includes(l.sp) ? l.sp : "other"}">${esc(l.sp)}:</span> ${esc(l.tx)}</p>`).join("");
+  const tail = S.log.filter(l => l.sp !== "LOOP" || !l.tx.startsWith("———")).slice(-3);
+  const last = tail[tail.length - 1], prev = tail.slice(0, -1);
+  const speech = last ? `<div class="speech ${last.sp === "YOU" ? "you" : ""}">${prev.map(l => `<div class="prev">${esc(l.sp)}: ${esc(l.tx)}</div>`).join("")}<span class="who">${last.sp === "MIA" ? "MIA (on the radio)" : esc(last.sp)}</span>${esc(last.tx)}</div>` : `<div class="speech"><span class="who">RADIO</span>The loop is quiet.</div>`;
   let act = "";
-  if (S.dlg && S.dlg.choices.length) act = S.dlg.choices.map((ch, i) => `<button class="choice" data-ch="${i}">${esc(ch.text)}</button>`).join("");
-  else if (S.dlg) act = `<button data-act="cont" class="big">CONTINUE</button>`;
-  else if (S.queue.length) act = `<button data-act="answer" class="big att">ANSWER MIA (${S.queue.length})</button>`;
-  else act = `<button data-act="ping" class="big">PING SELENE</button>`;
+  if (S.dlg && S.dlg.choices.length) act = `<div class="lbl">Your answer:</div>` + S.dlg.choices.map((ch, i) => `<button class="choice" data-ch="${i}">${esc(ch.text)}</button>`).join("");
+  else if (S.dlg) act = `<button data-act="cont" class="big">CONTINUE ▶</button>`;
+  else if (S.queue.length) act = `<button data-act="answer" class="big att">PICK UP THE RADIO</button>`;
+  else act = `<button data-act="ping" class="big">CALL MIA (small talk)</button>`;
   const m = S.mission; let rep = "";
-  if (m && m.type === "repair") rep = `<div class="sec"><div class="lbl">Repair · step ${m.progress + 1}/${m.steps.length} · errors ${m.mistakes}/${m.max} · manual on SCREENS</div>` +
-    m.options.map((o, i) => `<button data-dict="${i}" ${m.done.includes(i) ? "disabled" : ""}>${esc(o)}</button>`).join("") + `</div>`;
-  const short = { heat: "HEAT", lights: "LIGHTS", rover: "ROVER", cam: "CAM" };
-  return `<div class="log">${lines || '<p class="muted">The loop is quiet.</p>'}</div>${act}${rep}
-  <div class="sec"><div class="lbl">Systems · tap to switch off and save power</div><div class="sysrow">${Object.keys(S.sys).map(k => `<button class="sys ${S.sys[k] ? "on" : ""}" data-sys="${k}">${short[k]}<br><small>${S.sys[k] ? "ON" : "OFF"}</small></button>`).join("")}</div></div>
-  <div class="trust"><span>RAPPORT ${S.trust}</span><div class="bar"><b style="width:${S.trust}%"></b></div></div>`;
+  if (m && m.type === "repair") rep = `<div class="lbl">Repair — tap the steps in order (${m.progress}/${m.steps.length} done, list on SCREENS):</div>` +
+    m.options.map((o, i) => `<button data-dict="${i}" ${m.done.includes(i) ? "disabled" : ""}>${esc(o)}</button>`).join("");
+  const short = { heat: "HEAT", lights: "LIGHTS", rover: "ROVER", cam: "CAMERA" };
+  return `${speech}${act}${rep}
+  <div class="lbl">Power switches (off = saves power):</div><div class="sysrow">${Object.keys(S.sys).map(k => `<button class="sys ${S.sys[k] ? "on" : ""}" data-sys="${k}">${short[k]}<br><small>${S.sys[k] ? "ON" : "OFF"}</small></button>`).join("")}</div>
+  <div class="trust"><span>MIA TRUSTS YOU ${S.trust}%</span><div class="bar"><b style="width:${S.trust}%"></b></div></div>`;
 }
 function panelMonitors() {
   const m = S.mission;
-  let brief = '<div class="muted">No traverse requested. Mia is at the lander.</div>';
-  if (m) brief = `<div class="mia">MIA: “${esc(m.brief)}”</div>` + (m.type === "navigation" ? `<div class="hint">${m.state === "travel" ? "MIA IS ON HER WAY…" : `TAP THE TARGET ON THE MAP · ${m.maxA - m.attempts} tries left`}</div>` : `<div class="hint">Read the steps below, then dictate them on RADIO.</div>`);
-  let manual = "";
-  if (m && m.type === "repair") manual = `<div class="sec"><div class="lbl">${esc(m.manual)}</div><div class="manual">${m.steps.map((s, i) => `<div class="${i < m.progress ? "done" : i === m.progress ? "next" : ""}">${i + 1}. ${esc(s)}</div>`).join("")}</div></div>`;
-  const camNote = S.sys.cam && S.pw > 0 ? "green box on the map = camera hint" : "camera OFF — no map hint (Blind Navigation)";
-  return `<div class="screen"><div class="lbl">Helmet camera · ${camNote}</div><canvas class="cam" id="cam" width="160" height="90"></canvas></div>
-  ${brief}
-  <div class="screen amber"><canvas class="map" id="map"></canvas></div>
-  ${manual}`;
+  let top = `<div class="speech"><span class="who">SCREENS</span>No trip right now. Mia is at the lander (LM on the map). The big screen above is her helmet camera.</div>`;
+  if (m && m.type === "navigation") top = `<div class="speech"><span class="who">MIA SAYS</span>${esc(m.brief)}</div><div class="lbl">${m.state === "travel" ? "Mia is walking there…" : `Tap that square on the map · ${m.maxA - m.attempts} tries · ${S.sys.cam && S.pw > 0 ? "green box = camera hint" : "camera off: no hint"}`}</div>`;
+  if (m && m.type === "repair") top = `<div class="speech"><span class="who">${esc(m.manual)}</span>${m.steps.map((x, i) => `<div style="${i < m.progress ? "text-decoration:line-through;opacity:.5" : i === m.progress ? "color:var(--stamp-red)" : ""}">${i + 1}. ${esc(x)}</div>`).join("")}</div><div class="lbl">Remember the order, then go to the RADIO and tap the steps.</div>`;
+  return `${top}<div class="screen amber"><canvas class="map" id="map"></canvas></div>`;
 }
 function panelBoard() {
   const pinned = S.pinned.map(id => cardHtml(id)).join(""), inbox = S.discovered.filter(x => !S.pinned.includes(x));
   const sel = selCard ? card(selCard) : null;
   const tip = sel ? `<div class="hint"><b style="color:var(--cyan)">${esc(sel.title)}:</b> ${esc(sel.text)}<br>Now tap another card to tie a string.</div>`
     : inbox.length ? `<div class="hint">New cards below the board — tap one to pin it.</div>` : `<div class="hint">Tap a card, then another, to tie a red string. ${S.deds.length}/${DEDS.length} deductions.</div>`;
-  return `${tip}<div class="cork" id="cork">${pinned || '<div style="grid-column:1/-1;color:#3b2414;font-size:20px;text-align:center;padding:30px 0">Empty board</div>'}<svg class="strings" id="strings"></svg></div>
-  ${inbox.length ? `<div class="lbl">New cards · ${inbox.length}</div><div class="inbox">${inbox.map(id => cardHtml(id, true)).join("")}</div>` : ""}`;
+  return `${sel ? tip : `<div class="lbl">Tap a new clue to pin it · tap two pinned clues to tie them · ${S.deds.length}/${DEDS.length} solved</div>`}<div class="cork" id="cork">${pinned || '<div style="grid-column:1/-1;color:#3b2414;font-size:20px;text-align:center;padding:30px 0">Empty board</div>'}<svg class="strings" id="strings"></svg></div>
+  ${inbox.length ? `<div class="lbl">New clues — tap to pin (${inbox.length})</div><div class="inbox">${inbox.map(id => cardHtml(id, true)).join("")}</div>` : ""}`;
 }
 function cardHtml(id, inbox) {
   const c = card(id), k = { report: "#3fe0ff", measurement: "#5cffb0", photo: "#9b7bff", fax: "#ffb547", sample: "#d08a4a", deduction: "#ff5a5f" }[c.type] || "#3fe0ff";
@@ -936,8 +987,9 @@ function drawMap() {
     c.strokeStyle = "rgba(92,255,176,.5)"; c.beginPath(); c.moveTo((m.from.x + .5) * cell, (m.from.y + .5) * cell); c.lineTo((cx2 + .5) * cell, (m.from.y + .5) * cell); c.lineTo((cx2 + .5) * cell, (m.target.y + .5) * cell); c.stroke(); }
   if ((performance.now() / 400 | 0) % 2 || (nav && m.state === "travel")) { const px = (mx + .5) * cell, py = (my + .5) * cell, s2 = cell * .3; c.strokeStyle = "#5cffb0"; c.lineWidth = 2; c.beginPath(); c.moveTo(px - s2, py); c.lineTo(px + s2, py); c.moveTo(px, py - s2); c.lineTo(px, py + s2); c.stroke(); c.lineWidth = 1; }
 }
+const camOff = document.createElement("canvas"); camOff.width = 160; camOff.height = 96;
 function drawCam() {
-  const cv = $("#cam"); if (!cv) return; const c = cv.getContext("2d"), t = performance.now() / 1000, G = "#5cffb0";
+  const cv = camOff; const c = cv.getContext("2d"), t = performance.now() / 1000, G = "#5cffb0";
   const ok = S.sys.cam && S.pw > 0 && S.crisis?.id !== "c_signal_drop";
   if (!ok) { R(c, 0, 0, 160, 96, "#050a07"); for (let i = 0; i < 260; i++) { const v = Math.random(); R(c, Math.random() * 160, Math.random() * 96, 3, 3, `rgba(${v * 120},${v * 160},${v * 130},1)`); } c.fillStyle = "#000"; c.fillRect(0, 40, 160, 16); c.fillStyle = G; c.font = "10px monospace"; c.fillText(S.sys.cam ? "SIGNAL LOST" : "NO VIDEO — CAM OFF", 22, 52); return; }
   const walk = S.mission?.state === "travel", pan = t * (walk ? .25 : .05), bob = Math.sin(t * (walk ? 9 : 1.2)) * (walk ? 2 : .6), hz = 52 + bob;
@@ -957,20 +1009,24 @@ function hud() {
   $("#clock").classList.toggle("hold", S.hold);
   $("#o2b").style.width = S.o2 + "%"; $("#pwb").style.width = S.pw + "%";
   if (S.crisis) { const b = $("#cBar"); if (b) b.style.width = clamp(S.crisis.left / S.crisis.total * 100, 0, 100) + "%"; }
-  if (station === "monitors") { document.querySelectorAll(".lsb").forEach(b => { const v = { O2: S.o2, PWR: S.pw, TMP: S.temp / .3 }[b.dataset.k]; b.style.width = clamp(v, 0, 100) + "%"; }); document.querySelectorAll(".lsv").forEach(s => s.textContent = { O2: (S.o2 | 0) + "%", PWR: (S.pw | 0) + "%", TMP: (S.temp | 0) + "C" }[s.dataset.k]); drawMap(); drawCam(); }
+  if (station === "monitors") { document.querySelectorAll(".lsb").forEach(b => { const v = { O2: S.o2, PWR: S.pw, TMP: S.temp / .3 }[b.dataset.k]; b.style.width = clamp(v, 0, 100) + "%"; }); document.querySelectorAll(".lsv").forEach(s => s.textContent = { O2: (S.o2 | 0) + "%", PWR: (S.pw | 0) + "%", TMP: (S.temp | 0) + "C" }[s.dataset.k]); drawMap(); }
 }
 
 // ------------------------------------------------------------------ main loop
-let last = performance.now(), hudAcc = 0, tabSig = "";
+let last = performance.now(), hudAcc = 0, tabSig = "", camX = 2, camT = 2;
 function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000); last = now; const t = now / 1000;
   if (S && S.inGame && !paused) update(dt);
   if (subTimer > 0) { subTimer -= dt; if (subTimer <= 0) $("#sub").textContent = ""; }
   if (!$("#ending").hidden && endingEra) drawConsole($("#endScene").getContext("2d"), t, endingEra);
-  else if ($("#menu").hidden) { (DRAW[station] || drawConsole)(g, t, day().era); }
+  else if ($("#menu").hidden) {
+    camX += (camT - camX) * (1 - Math.exp(-10 * dt)); if (Math.abs(camT - camX) < .002) camX = camT;
+    const a = Math.floor(camX), f = camX - a;
+    for (const idx of f > 0 ? [a, a + 1] : [a]) { const st = STATIONS[idx]; if (!st) continue; g.save(); g.translate(Math.round((idx - camX) * 320), 0); g.beginPath(); g.rect(0, 0, 320, 180); g.clip(); DRAW[st[0]](g, t, day().era); g.restore(); }
+  }
   else drawConsole($("#menuBg").getContext("2d"), t, "1970s");
   hudAcc += dt;
-  if (hudAcc > .25) { hudAcc = 0; hud(); const sig = STATIONS.map(([id]) => +pendingFor(id)).join("") + station; if (sig !== tabSig) { tabSig = sig; renderTabs(); } }
+  if (hudAcc > .25) { hudAcc = 0; hud(); const sig = STATIONS.map(([id]) => +pendingFor(id)).join("") + station + JSON.stringify(goal()); if (sig !== tabSig) { tabSig = sig; renderTabs(); } }
   if (dirty && S) { dirty = false; renderPanel(); renderTabs(); hud(); }
   requestAnimationFrame(frame);
 }
