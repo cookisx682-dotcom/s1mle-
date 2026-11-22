@@ -1,15 +1,17 @@
 <title>Ground Control</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;700&family=VT323&display=swap">
 <style>
 /* Layout: one-screen mobile app — status bar, pixel scene (16:9), station panel (scrolls), station tabs. */
 :root {
-  --bg: #0b1428; --deep: #060c18; --panel: #0d1a33; --line: #1d3354;
-  --cyan: #3fe0ff; --violet: #9b7bff; --green: #5cffb0; --amber: #ffb547; --red: #ff5a5f;
-  --text: #cfe9ff; --dim: #6b7d99; --paper: #ece6d3; --ink: #1d1a14;
+  /* Desk & paper: muted 1971 office — wood desk, cream paper, ink, rubber-stamp red, olive approval green */
+  --bg: #2e2820; --deep: #1f1a15; --panel: #3a3229; --line: #5a4e3e;
+  --cyan: #a9cbbf; --violet: #b8a2d6; --green: #a3c48d; --amber: #e3b45c; --red: #c4493d;
+  --text: #ece2c6; --dim: #a1957a; --paper: #e4d9bb; --paper-2: #d4c7a3; --ink: #2a241d;
+  --stamp-red: #a8322b; --stamp-green: #4f6e3a; --metal: #6d675c;
   --f-ui: "VT323", "Courier New", ui-monospace, monospace;
-  --f-title: "Press Start 2P", "VT323", ui-monospace, monospace;
+  --f-title: "Pixelify Sans", "VT323", ui-monospace, monospace;
   color-scheme: dark;
 }
 html, body { height: 100%; }
@@ -154,6 +156,103 @@ canvas.map, canvas.cam { width: 100%; display: block; image-rendering: pixelated
 #ending .cap { color: var(--green); font-size: 22px; min-height: 2.6em; }
 #ending canvas { width: 100%; max-width: 520px; image-rendering: pixelated; opacity: 0; transition: opacity 2s; }
 .chk { display: flex; justify-content: space-between; align-items: center; }
+
+/* ================= desk-and-paper skin ================= */
+body { background: var(--deep); }
+#app { background: var(--bg) repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 9px), repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 23px); }
+#top { background: var(--metal); border-bottom: 4px solid #2a251f; box-shadow: inset 0 2px 0 #8a8476; }
+#clock { font-family: var(--f-title); font-size: 15px; color: #f1e8cc; text-shadow: 1px 1px 0 #2a251f; }
+#clock.hold { color: #ffd27a; }
+.meter { color: #f1e8cc; } .meter i { background: #2a251f; border-color: #2a251f; }
+#scene { filter: saturate(.55) sepia(.22) contrast(1.05); }
+#sceneWrap { border-bottom: 4px solid #2a251f; }
+button { font-family: var(--f-ui); color: var(--ink); background: var(--paper); border: 2px solid var(--ink); box-shadow: 2px 3px 0 rgba(0,0,0,.45); }
+button:active { background: var(--paper-2); color: var(--ink); transform: translate(2px, 2px); box-shadow: none; }
+button:disabled { color: #7b715d; background: #b8ac8c; border-color: #7b715d; box-shadow: none; text-decoration: line-through; }
+.h, .lbl { font-family: var(--f-title); letter-spacing: .04em; }
+.lbl { font-size: 12px; color: #c9bd9c; }
+.hint { color: var(--text); }
+.mia { color: #f3c972; }
+.muted { color: var(--dim); }
+/* teletype printout for the radio log */
+.log { background: var(--paper) repeating-linear-gradient(0deg, transparent 0 21px, rgba(120,90,40,.16) 21px 22px); color: var(--ink); border: 0; box-shadow: 3px 4px 0 rgba(0,0,0,.4); padding: 10px 12px; position: relative; }
+.log::before { content: "TELETYPE · S-BAND LOOP"; display: block; font-family: var(--f-title); font-size: 11px; color: #8a7a55; margin-bottom: 4px; }
+.sp-MIA { color: #2f5d3a; } .sp-YOU { color: #2b3f6e; } .sp-LOOP { color: #6a3d72; } .sp-other { color: #7c4a17; }
+.log p { color: var(--ink); }
+.choice { background: #efe6cc; color: var(--ink); text-align: left; }
+.choice::before { color: var(--stamp-red); }
+button.big { font-family: var(--f-title); font-size: 15px; }
+button.big.att { background: #f1d9a0; border-color: var(--stamp-red); color: var(--stamp-red); animation: nudge 1.4s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: rotate(-1deg) } }
+.sec { border-top: 2px dashed #5a4e3e; }
+/* system switches on a metal plate */
+.sysrow { background: var(--metal); padding: 8px; box-shadow: inset 0 2px 0 #8a8476, 2px 3px 0 rgba(0,0,0,.4); }
+.sysrow button { background: #3b372f; color: #9a9384; border-color: #22201b; box-shadow: inset 0 -4px 0 #22201b; font-family: var(--f-title); font-size: 11px; }
+.sysrow button small { font-family: var(--f-ui); font-size: 16px; }
+.sysrow button.on { background: #cfa04a; color: var(--ink); border-color: #22201b; box-shadow: inset 0 4px 0 #8f6a26; }
+.trust { color: #e3cf97; } .trust .bar { background: #2a251f; border-color: #2a251f; } .trust .bar b { background: #b8873a; }
+/* monitors in beige plastic bezels */
+.screen { border: 10px solid #b6ab8b; border-radius: 6px; box-shadow: inset 0 0 0 2px #2a251f, 3px 4px 0 rgba(0,0,0,.45); background: #050806; }
+.screen.amber { border-color: #b6ab8b; }
+.screen .lbl { color: #6fae86; font-family: var(--f-ui); font-size: 15px; }
+.manual { background: var(--paper); color: var(--ink); padding: 8px 10px; box-shadow: 3px 4px 0 rgba(0,0,0,.4); }
+.manual .done { color: #8a7f68; } .manual .next { color: var(--stamp-red); }
+/* board */
+.cork { box-shadow: 3px 4px 0 rgba(0,0,0,.45); }
+/* window & fax */
+.box { background: var(--paper); color: var(--ink); border: 0; box-shadow: 3px 4px 0 rgba(0,0,0,.4); }
+.box .muted { color: #7b715d; }
+.paper { box-shadow: 3px 4px 0 rgba(0,0,0,.45); border: 0; transform: rotate(-.4deg); position: relative; }
+.paper .t { font-family: var(--f-title); font-size: 19px; }
+.faxlist button { background: var(--paper-2); }
+.faxlist button.cur { background: var(--paper); color: var(--stamp-red); border-color: var(--stamp-red); }
+.stamp { font-family: var(--f-title); font-size: 15px; text-transform: uppercase; background: transparent; box-shadow: none; border: 3px solid currentColor; padding: 6px 10px; transform: rotate(-4deg); text-align: center; }
+.stamp.s1 { color: var(--stamp-green); } .stamp.s2 { color: var(--stamp-red); transform: rotate(3deg); }
+.stamp:active { background: rgba(0,0,0,.06); }
+.stampmark { position: absolute; right: 10px; top: 14px; font-family: var(--f-title); font-size: 18px; color: var(--stamp-red); border: 3px solid currentColor; padding: 4px 8px; transform: rotate(-12deg); opacity: .8; mix-blend-mode: multiply; pointer-events: none; max-width: 60%; text-align: center; }
+.stampmark.ok { color: var(--stamp-green); }
+.stampmark.new { animation: thunk .35s ease-out; }
+@keyframes thunk { from { transform: rotate(-12deg) scale(1.8); opacity: 0 } }
+/* drawer tabs */
+#tabs { background: #241f19; border-top: 4px solid #2a251f; gap: 3px; padding-inline: 3px; }
+#tabs button { background: #8b7c5d; color: #2a241d; border: 2px solid #2a241d; border-bottom: 0; box-shadow: none; font-family: var(--f-title); font-size: 10px; padding: 12px 1px 10px; margin-top: 5px; }
+#tabs button.cur { background: var(--paper); color: var(--stamp-red); box-shadow: none; margin-top: 0; }
+#tabs button.att::after { background: var(--stamp-red); }
+/* full-screen layers: documents on the desk */
+.layer { background: rgba(31,26,21,.96) repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 2px, transparent 2px 9px); }
+.layer .inner { background: var(--paper); color: var(--ink); padding: 18px 16px; box-shadow: 4px 6px 0 rgba(0,0,0,.5); transform: rotate(-.3deg); }
+.layer .inner .muted { color: #7b715d; }
+.layer .h { color: var(--ink); }
+#menu .inner { gap: 10px; }
+.title { font-family: var(--f-title); font-weight: 700; color: var(--ink); text-shadow: 2px 2px 0 rgba(168,50,43,.35); animation: none; font-size: clamp(30px, 10vw, 52px); line-height: 1; letter-spacing: .02em; }
+.subtitle { color: var(--stamp-red); font-family: var(--f-title); font-size: 18px; }
+.date { font-family: var(--f-title); color: var(--ink); }
+.intro-body { color: var(--ink); }
+.pulse { color: var(--stamp-red); font-family: var(--f-title); font-size: 13px; }
+.report { box-shadow: none; border: 0; padding: 0; background: transparent; position: relative; }
+.report b { font-family: var(--f-title); font-size: 14px; }
+.grade { font-family: var(--f-title); color: var(--stamp-red); border: 4px solid currentColor; padding: 2px 12px; transform: rotate(-10deg); mix-blend-mode: multiply; }
+.ach { background: #d4c7a3; border-color: #a99b78; color: #7b715d; box-shadow: 2px 3px 0 rgba(0,0,0,.25); }
+.ach .ic { background: #a99b78; color: var(--paper); font-family: var(--f-title); }
+.ach.on { background: var(--paper); border-color: var(--stamp-green); color: var(--ink); box-shadow: 2px 3px 0 rgba(0,0,0,.3); }
+.ach.on .ic { background: var(--stamp-green); color: var(--paper); }
+.ach .n, .ach.on .n { color: var(--ink); font-family: var(--f-title); font-size: 15px; }
+.chk { color: var(--ink); }
+#crisis { background: rgba(31,10,8,.9); }
+#crisis .inner { background: #efe0c4; border: 4px double var(--stamp-red); box-shadow: 4px 6px 0 rgba(0,0,0,.5); animation: shake .5s steps(2) infinite; }
+@keyframes shake { 50% { transform: rotate(.6deg) } }
+#crisis .ct { font-family: var(--f-title); color: var(--stamp-red); font-size: 18px; }
+#crisis .ct::before { content: "URGENT · "; }
+#crisis .bar { background: #c9b994; border-color: var(--ink); } #crisis .bar b { background: var(--stamp-red); }
+#crisis button { background: #f7efd9; }
+#toast { background: var(--paper); border: 2px solid var(--ink); box-shadow: 3px 4px 0 rgba(0,0,0,.5); }
+#toast .ic { background: var(--stamp-green); color: var(--paper); }
+#toast #tTx { color: var(--ink) !important; font-family: var(--f-title); font-size: 15px !important; }
+#ending .big { color: #ece2c6; text-shadow: none; font-family: var(--f-title); }
+#ending .small { color: #c4493d; }
+#ending .cap { color: #e3cf97; }
+#menuBg { filter: blur(3px) brightness(.4) sepia(.5); }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -463,7 +562,7 @@ function resolveCrisis(i) {
   if (ok) { stat("crises_ok"); sfx("crisis_ok"); say("MIA", k.c.success_line || "That did it."); apply(k.c.success_effects); }
   else { stat("crises_failed"); sfx("crisis_fail"); say("MIA", i < 0 ? (k.c.timeout_line || "Ground? ...I handled it myself. Barely.") : (k.c.fail_line || "That made it worse.")); apply(k.c.fail_effects); }
   emit("crisis_resolved", { id: k.id, success: ok });
-  const inner = $("#crisisInner"); inner.innerHTML = `<div class="ct" style="color:${ok ? "var(--green)" : "var(--red)"}">${ok ? "RESOLVED" : "FAILED"}</div>`;
+  const inner = $("#crisisInner"); inner.innerHTML = `<div class="ct" style="color:${ok ? "var(--stamp-green)" : "var(--stamp-red)"}">${ok ? "RESOLVED" : "FAILED"}</div>`;
   setTimeout(() => { if (!S.crisis) $("#crisis").hidden = true; }, 1300);
 }
 function showCrisis() {
@@ -478,6 +577,7 @@ function queueFax(id) { if (!EV.faxes[id] || S.faxInbox.includes(id) || S.faxArc
 function answerFax(id, i) {
   if (!S.faxInbox.includes(id)) return; const f = EV.faxes[id]; S.faxInbox = S.faxInbox.filter(x => x !== id);
   const ch = (f.choices || [])[i]; const ans = ch ? ch.label : "ACKNOWLEDGED"; S.faxArchive.push({ id, ans });
+  S.faxArchive[S.faxArchive.length - 1].n = 1; setTimeout(() => { const a = S.faxArchive.find(x => x.id === id); if (a) a.n = 0; }, 800);
   if (ch) apply(ch.effects); if (f.card) discover(f.card); apply(f.effects); sfx("paper"); emit("fax_answered", { id, answer: ans });
 }
 
@@ -591,8 +691,8 @@ function newGame() { S = freshState(); store.del("gc_save"); startDay(); }
 function startDay() {
   store.set("gc_save", snapshot()); paused = true; station = "console"; selCard = null; faxShown = null;
   const d = day(); $("#menu").hidden = true;
-  showLayer(`<div class="date">${esc(d.date)}</div><div class="subtitle" style="font-size:22px;letter-spacing:.1em">${esc(d.title)}</div>` +
-    `<div class="intro-body">${(d.intro || []).map(esc).join("<br><br>")}</div><div class="pulse">[ TAP TO BEGIN SHIFT ]</div>`, () => { hideLayer(); beginDay(); });
+  showLayer(`<div class="date">${esc(d.date)}</div><div class="subtitle" style="font-size:16px">${esc(d.title)}</div>` +
+    `<div class="intro-body">${(d.intro || []).map(esc).join("<br><br>")}</div><div class="pulse">[ TAP TO CLOCK IN ]</div>`, () => { hideLayer(); beginDay(); });
 }
 function showReport(r) {
   const d = day(), s = S.stats, L = (k, v) => (k + " ").padEnd(24, ".") + " " + v;
@@ -775,16 +875,16 @@ function cardHtml(id, inbox) {
 function panelWindow() {
   const v = S.visitor;
   if (!v) return `<div class="h">Hall window</div><div class="box"><div class="muted" style="font-size:20px">The hall is empty. Somewhere a vending machine hums, and the teletype in Room 3 chatters to itself.</div></div>`;
-  return `<div class="h">Hall window</div><div class="box"><div style="color:var(--amber)">${esc(v.name.toUpperCase())} — ${esc(v.role)}</div><div style="font-size:21px">“${esc(v.text)}”</div><button data-act="ack" style="text-align:center">${esc(v.button || "ACKNOWLEDGE")}</button></div>`;
+  return `<div class="h">Hall window</div><div class="box"><div style="color:var(--stamp-red);font-family:var(--f-title);font-size:14px">${esc(v.name.toUpperCase())} — ${esc(v.role)}</div><div style="font-size:21px">“${esc(v.text)}”</div><button data-act="ack" style="text-align:center">${esc(v.button || "ACKNOWLEDGE")}</button></div>`;
 }
 function panelPhone() {
   const ids = S.faxInbox.concat(S.faxArchive.map(a => a.id)); if (!faxShown && ids.length) faxShown = ids[0];
   const list_ = `<div class="faxlist">${ids.map(id => `<button data-fax="${id}" class="${id === faxShown ? "cur" : ""}">${S.faxInbox.includes(id) ? "* " : ""}${esc(EV.faxes[id].title.slice(0, 22))}</button>`).join("")}</div>`;
   if (!faxShown) return `<div class="h">Telefax · line 2</div><div class="paper"><div class="t">NO MESSAGES</div><div>The fax machine is warm and silent.</div></div>`;
   const f = EV.faxes[faxShown], open = S.faxInbox.includes(faxShown), arch = S.faxArchive.find(a => a.id === faxShown);
-  const ch = (f.choices && f.choices.length ? f.choices : [{ label: "ACKNOWLEDGE" }]).map((c, i) => `<button data-ans="${f.choices && f.choices.length ? i : -1}">${esc(c.label)}</button>`).join("");
+  const ch = (f.choices && f.choices.length ? f.choices : [{ label: "RECEIVED" }]).map((c, i) => `<button class="stamp s${i + 1}" data-ans="${f.choices && f.choices.length ? i : -1}">${esc(c.label)}</button>`).join("");
   return `<div class="h">Telefax · line 2</div>${list_}<div class="paper"><div class="from">FROM: ${esc(f.from)}<br>REF: ${esc(f.ref || faxShown)}</div><div class="t">${esc(f.title)}</div><div style="font-size:21px">${esc(f.body)}</div>
-  ${open ? `${f.required ? '<div style="color:#8a2c24">AWAITING YOUR RESPONSE</div>' : ""}<div class="row">${ch}</div>` : `<div style="color:#8a2c24">FILED · YOUR RESPONSE: ${esc(arch?.ans || "")}</div>`}</div>`;
+  ${open ? `${f.required ? '<div style="color:#8a2c24">AWAITING YOUR RESPONSE</div>' : ""}<div class="row">${ch}</div>` : `<div class="stampmark ${/COMPLY|RELAY|RECEIVED|ACKNOWLEDGED/.test(arch?.ans || "") ? "ok" : ""} ${arch && arch.n ? "new" : ""}">${esc(arch?.ans || "FILED")}</div>`}</div>`;
 }
 function bindPanel() {
   const P = $("#panel");
