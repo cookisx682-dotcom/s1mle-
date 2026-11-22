@@ -33,6 +33,24 @@ button:disabled { color: var(--dim); border-color: #243049; background: var(--de
 
 /* scene */
 #sceneWrap { position: relative; flex: none; }
+#app.slim #scene { display: none; }
+#app.slim #sceneWrap { height: auto; }
+#app.slim #sub { display: none; }
+#app.slim #notes { position: static; padding: 4px 16px 0; }
+#app.slim #notes div { animation-duration: 3s; }
+.lbl { font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.sec { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.hint { color: var(--text); font-size: 18px; }
+button.big { text-align: center; font-size: 22px; padding: 10px; }
+button.big.att { border-color: var(--amber); color: var(--amber); }
+.sysrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.sysrow button { text-align: center; padding: 6px 2px; font-size: 18px; line-height: 1; color: var(--dim); }
+.sysrow button small { font-size: 15px; }
+.sysrow button.on { color: var(--amber); border-color: var(--amber); }
+.trust { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; color: var(--violet); font-size: 17px; }
+.screen { flex: none; border: 3px solid #2b4a3c; background: #000; padding: 4px; display: flex; flex-direction: column; gap: 4px; }
+.screen.amber { border-color: #5a4316; }
+.screen .lbl { color: #3aa877; font-size: 15px; }
 #scene { display: block; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; image-rendering: pixelated; image-rendering: crisp-edges; background: #000; }
 .crt #sceneWrap::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55)); }
 #notes { position: absolute; left: 8px; top: 6px; right: 8px; display: flex; flex-direction: column; gap: 2px; pointer-events: none; }
@@ -47,7 +65,7 @@ button:disabled { color: var(--dim); border-color: #243049; background: var(--de
 .box > .lbl { font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .row > button { flex: 1 1 40%; }
-.log { max-height: 34vh; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; font-size: 19px; }
+.log { max-height: 42vh; border: 2px solid var(--line); background: var(--panel); padding: 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; font-size: 19px; }
 .log p { margin: 0; }
 .log p.new { animation: lineIn .5s steps(6); }
 @keyframes lineIn { from { opacity: 0; transform: translateY(4px) } }
@@ -69,8 +87,8 @@ canvas.map, canvas.cam { width: 100%; display: block; image-rendering: pixelated
 .manual .next { color: #fff; }
 
 /* board */
-.cork { position: relative; background: #8a5a32; background-image: radial-gradient(#6b4325 1px, transparent 1.5px), radial-gradient(#a36c3e 1px, transparent 1.5px); background-size: 7px 7px, 11px 11px; background-position: 0 0, 3px 5px; border: 6px solid #2a1c12; padding: 10px; min-height: 160px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; align-content: start; }
-.card { position: relative; background: #efe9d8; color: var(--ink); padding: 9px 5px 5px; font-size: 15px; line-height: 1.05; min-height: 58px; box-shadow: 2px 3px 0 rgba(0,0,0,.35); border-top: 5px solid var(--k, #3fe0ff); cursor: pointer; z-index: 1; }
+.cork { position: relative; flex: none; min-height: clamp(300px, 46vh, 480px); background: #8a5a32; background-image: radial-gradient(#6b4325 1px, transparent 1.5px), radial-gradient(#a36c3e 1px, transparent 1.5px); background-size: 7px 7px, 11px 11px; background-position: 0 0, 3px 5px; border: 6px solid #2a1c12; padding: 10px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; align-content: start; }
+.card { position: relative; background: #efe9d8; color: var(--ink); padding: 9px 5px 5px; font-size: 16px; line-height: 1.05; min-height: 58px; box-shadow: 2px 3px 0 rgba(0,0,0,.35); border-top: 5px solid var(--k, #3fe0ff); cursor: pointer; z-index: 1; }
 .card::before { content: ""; position: absolute; top: -8px; left: 50%; width: 8px; height: 8px; margin-left: -4px; background: #c0392b; border-radius: 50%; box-shadow: 1px 1px 0 #000; }
 .card small { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .6; margin-bottom: 2px; }
 .card.sel { outline: 3px solid var(--cyan); }
@@ -706,6 +724,7 @@ function go(id) { if (id === station) return; station = id; selCard = null; sfx(
 
 function renderPanel() {
   const P = $("#panel"); if (!S) { P.innerHTML = ""; return; }
+  $("#app").classList.toggle("slim", station === "board" || station === "monitors");
   const keep = station === "console" ? null : P.scrollTop;
   P.innerHTML = ({ console: panelConsole, monitors: panelMonitors, board: panelBoard, window: panelWindow, phone: panelPhone })[station]();
   bindPanel(); if (keep != null) P.scrollTop = keep;
@@ -718,35 +737,36 @@ function panelConsole() {
   const lines = S.log.slice(-40).map(l => `<p class="${l.n ? "new" : ""}"><span class="sp-${["MIA", "YOU", "LOOP"].includes(l.sp) ? l.sp : "other"}">${esc(l.sp)}:</span> ${esc(l.tx)}</p>`).join("");
   let act = "";
   if (S.dlg && S.dlg.choices.length) act = S.dlg.choices.map((ch, i) => `<button class="choice" data-ch="${i}">${esc(ch.text)}</button>`).join("");
-  else if (S.dlg) act = `<button data-act="cont" style="text-align:center">CONTINUE</button>`;
-  else if (S.queue.length) act = `<button data-act="answer" style="text-align:center">ANSWER TRANSMISSION (${S.queue.length})</button>`;
-  else act = `<button data-act="ping" style="text-align:center">PING SELENE</button>`;
+  else if (S.dlg) act = `<button data-act="cont" class="big">CONTINUE</button>`;
+  else if (S.queue.length) act = `<button data-act="answer" class="big att">ANSWER MIA (${S.queue.length})</button>`;
+  else act = `<button data-act="ping" class="big">PING SELENE</button>`;
   const m = S.mission; let rep = "";
-  if (m && m.type === "repair") rep = `<div class="box"><div class="lbl">Repair dictation · ${esc(m.title)}</div><div class="muted">STEP ${m.progress + 1}/${m.steps.length} · ERRORS ${m.mistakes}/${m.max} · manual is on SCREENS</div>` +
+  if (m && m.type === "repair") rep = `<div class="sec"><div class="lbl">Repair · step ${m.progress + 1}/${m.steps.length} · errors ${m.mistakes}/${m.max} · manual on SCREENS</div>` +
     m.options.map((o, i) => `<button data-dict="${i}" ${m.done.includes(i) ? "disabled" : ""}>${esc(o)}</button>`).join("") + `</div>`;
-  const word = S.trust >= 90 ? "BEST COLLEAGUES" : S.trust >= 70 ? "WARM" : S.trust >= 45 ? "PROFESSIONAL" : S.trust >= 25 ? "GUARDED" : "COLD";
-  return `<div class="h">S-Band voice loop · Selene-1</div><div class="box"><div class="log">${lines || '<p class="muted">The loop is quiet.</p>'}</div></div>${act}${rep}
-  <div class="box"><div class="lbl">System levers · bus load ${powerDraw().toFixed(3)} %/s</div><div class="row">${Object.keys(S.sys).map(k => `<button class="sys ${S.sys[k] ? "on" : ""}" data-sys="${k}">${S.sys[k] ? "[ON]" : "[--]"} ${SYSNAME[k]}</button>`).join("")}</div></div>
-  <div class="box"><div class="lbl">Rapport with Mia · ${S.trust}/100 · ${word}</div><div class="bar"><b style="width:${S.trust}%"></b></div></div>`;
+  const short = { heat: "HEAT", lights: "LIGHTS", rover: "ROVER", cam: "CAM" };
+  return `<div class="log">${lines || '<p class="muted">The loop is quiet.</p>'}</div>${act}${rep}
+  <div class="sec"><div class="lbl">Systems · tap to switch off and save power</div><div class="sysrow">${Object.keys(S.sys).map(k => `<button class="sys ${S.sys[k] ? "on" : ""}" data-sys="${k}">${short[k]}<br><small>${S.sys[k] ? "ON" : "OFF"}</small></button>`).join("")}</div></div>
+  <div class="trust"><span>RAPPORT ${S.trust}</span><div class="bar"><b style="width:${S.trust}%"></b></div></div>`;
 }
 function panelMonitors() {
-  const m = S.mission; let brief = '<div class="muted">No traverse requested. Mia is at the lander.</div>';
-  if (m) brief = `<div class="mia">MIA: “${esc(m.brief)}”</div>` + (m.type === "navigation" ? `<div class="muted">${m.state === "travel" ? "EN ROUTE…" : `Tap the target cell · attempts left ${m.maxA - m.attempts} · ${S.sys.cam && S.pw > 0 ? "cam triangulation ON (green box)" : "HELMET CAM OFF — navigating blind"}`}</div>` : `<div class="muted">Read the manual below, dictate the steps at RADIO.</div>`);
+  const m = S.mission;
+  let brief = '<div class="muted">No traverse requested. Mia is at the lander.</div>';
+  if (m) brief = `<div class="mia">MIA: “${esc(m.brief)}”</div>` + (m.type === "navigation" ? `<div class="hint">${m.state === "travel" ? "MIA IS ON HER WAY…" : `TAP THE TARGET ON THE MAP · ${m.maxA - m.attempts} tries left`}</div>` : `<div class="hint">Read the steps below, then dictate them on RADIO.</div>`);
   let manual = "";
-  if (m && m.type === "repair") manual = `<div class="box"><div class="lbl">${esc(m.manual)}</div><div class="manual">${m.steps.map((s, i) => `<div class="${i < m.progress ? "done" : i === m.progress ? "next" : ""}">${i + 1}. ${esc(s)}</div>`).join("")}</div></div>`;
-  else manual = `<div class="box"><div class="lbl">Technical manuals · index</div><div class="manual" style="font-size:16px;color:#2f9a6a">${MIS.templates.filter(t => t.type === "repair").map(t => "> " + esc(t.manual)).join("<br>")}</div></div>`;
-  const ls = [["O2", S.o2, 100, "%"], ["PWR", S.pw, 100, "%"], ["TMP", S.temp, 30, "C"]].map(([n, v, mx, u]) => `<span>${n}</span><i><b class="lsb" data-k="${n}" style="width:${clamp(v / mx * 100, 0, 100)}%"></b></i><span class="lsv" data-k="${n}">${v | 0}${u}</span>`).join("");
-  return `<div class="h">Monitor bank</div><div class="box">${brief}</div><div class="box"><div class="lbl">Terrain map · Mare Serenitatis</div><canvas class="map" id="map"></canvas></div>
-  <div class="grid2"><div class="box"><div class="lbl">Life support</div><div class="ls">${ls}</div></div><div class="box"><div class="lbl">Helmet cam</div><canvas class="cam" id="cam" width="160" height="96"></canvas></div></div>${manual}`;
+  if (m && m.type === "repair") manual = `<div class="sec"><div class="lbl">${esc(m.manual)}</div><div class="manual">${m.steps.map((s, i) => `<div class="${i < m.progress ? "done" : i === m.progress ? "next" : ""}">${i + 1}. ${esc(s)}</div>`).join("")}</div></div>`;
+  const camNote = S.sys.cam && S.pw > 0 ? "green box on the map = camera hint" : "camera OFF — no map hint (Blind Navigation)";
+  return `<div class="screen"><div class="lbl">Helmet camera · ${camNote}</div><canvas class="cam" id="cam" width="160" height="90"></canvas></div>
+  ${brief}
+  <div class="screen amber"><canvas class="map" id="map"></canvas></div>
+  ${manual}`;
 }
 function panelBoard() {
   const pinned = S.pinned.map(id => cardHtml(id)).join(""), inbox = S.discovered.filter(x => !S.pinned.includes(x));
   const sel = selCard ? card(selCard) : null;
-  return `<div class="h">Evidence board <span class="muted" style="float:right">deductions ${S.deds.length}/${DEDS.length}</span></div>
-  <div class="muted">Tap an inbox card to pin it. Tap two pinned cards to tie a red string. Wrong pairs cost 20 minutes.</div>
-  <div class="cork" id="cork">${pinned || '<div class="muted" style="grid-column:1/-1;color:#3b2414">Nothing pinned yet.</div>'}<svg class="strings" id="strings"></svg></div>
-  ${sel ? `<div class="box detail"><div class="t">${esc(sel.title)}</div><div>${esc(sel.text)}</div><div class="muted">Selected — tap another pinned card to connect.</div></div>` : ""}
-  <div class="box"><div class="lbl">Inbox · ${inbox.length}</div><div class="inbox">${inbox.map(id => cardHtml(id, true)).join("") || '<span class="muted">Empty.</span>'}</div></div>`;
+  const tip = sel ? `<div class="hint"><b style="color:var(--cyan)">${esc(sel.title)}:</b> ${esc(sel.text)}<br>Now tap another card to tie a string.</div>`
+    : inbox.length ? `<div class="hint">New cards below the board — tap one to pin it.</div>` : `<div class="hint">Tap a card, then another, to tie a red string. ${S.deds.length}/${DEDS.length} deductions.</div>`;
+  return `${tip}<div class="cork" id="cork">${pinned || '<div style="grid-column:1/-1;color:#3b2414;font-size:20px;text-align:center;padding:30px 0">Empty board</div>'}<svg class="strings" id="strings"></svg></div>
+  ${inbox.length ? `<div class="lbl">New cards · ${inbox.length}</div><div class="inbox">${inbox.map(id => cardHtml(id, true)).join("")}</div>` : ""}`;
 }
 function cardHtml(id, inbox) {
   const c = card(id), k = { report: "#3fe0ff", measurement: "#5cffb0", photo: "#9b7bff", fax: "#ffb547", sample: "#d08a4a", deduction: "#ff5a5f" }[c.type] || "#3fe0ff";
