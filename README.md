@@ -9,7 +9,9 @@
 
 Hororová hra z pohľadu prvej osoby, ktorá beží priamo v prehliadači. Po 26 rokoch sa vraciaš do domu, kde zmizla tvoja rodina. Zostali po nej iba VHS kazety a do niektorých sa dá vojsť.
 
-**Ako hrať:** otvor `kazeta13/index.html` v prehliadači Chrome, Edge alebo Firefox. Najlepšie so slúchadlami.
+**Hrať a stiahnuť:** https://cookisx682-dotcom.github.io/s1mle-/kazeta13/
+
+Alebo si stiahni [Kazeta13.zip](kazeta13/Kazeta13.zip), rozbaľ ho a otvor `hra.html`. Najlepšie so slúchadlami.
 
 - 7 dní, asi hodina hrania, 3 konce (jeden tajný)
 - 6 príšer: Hosť, Matka, Mäsiar, Sestra, Dvojník, Hlásateľ

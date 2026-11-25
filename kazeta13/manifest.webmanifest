@@ -3,7 +3,7 @@
   "short_name": "Kazeta 13",
   "description": "Hororová hra z pohľadu prvej osoby. Niektoré spomienky mali zostať na páske.",
   "lang": "sk",
-  "start_url": "./index.html",
+  "start_url": "./hra.html",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "any",
