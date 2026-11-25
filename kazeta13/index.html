@@ -41,6 +41,7 @@ html,body{height:100%;margin:0;background:var(--void);color:var(--ink);overflow:
 .meter .bar{height:5px;background:rgba(235,230,220,.12);border-radius:3px;overflow:hidden}
 .meter .bar i{display:block;height:100%;width:100%;background:var(--ink);opacity:.85;transition:width .25s,background .3s}
 #hpM .bar i{background:#c8372e}
+#safeL{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#ffd678;text-shadow:0 0 10px rgba(255,200,100,.5)}
 .meter.low{color:#d08f88}.meter.low .bar i{background:var(--rec)}
 #obj{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);left:50%;transform:translateX(-50%);width:min(520px,52vw);
   text-align:center;font-size:12.5px;line-height:1.5;letter-spacing:.13em;text-transform:uppercase;color:var(--ink);opacity:0;transition:opacity 1.2s;text-shadow:0 1px 6px #000;text-wrap:balance}
@@ -97,39 +98,69 @@ body.touch #bR{bottom:calc(env(safe-area-inset-bottom,0px) + 196px)}
 .ov{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:var(--void);
   overflow:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px;box-sizing:border-box;text-align:center}
 .ov.scroll{justify-content:flex-start}
-#noise{position:absolute;inset:0;width:100%;height:100%;opacity:.09;pointer-events:none}
-.cass{position:relative;width:min(440px,88vw);aspect-ratio:1.72;background:linear-gradient(#1c1b1a,#101010);border-radius:12px;
-  box-shadow:0 30px 80px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.06);transform:rotate(-1.5deg);flex-shrink:0}
-.cass .label{position:absolute;left:6%;right:6%;top:8%;height:42%;background:var(--tape);border-radius:3px;overflow:hidden;
-  background-image:repeating-linear-gradient(transparent 0 21px,rgba(90,120,170,.25) 21px 22px)}
-.cass .label::before{content:"";position:absolute;left:0;right:0;top:0;height:16%;background:#b8402f;opacity:.85}
-.cass h1{position:absolute;left:7%;top:26%;margin:0;font:400 clamp(32px,9vw,54px)/1 var(--f-mark);color:#17140f;transform:rotate(-2deg)}
-.cass .no{position:absolute;right:6%;bottom:12%;font:400 clamp(12px,3vw,17px)/1 var(--f-mark);color:#a3271d;transform:rotate(-7deg)}
-.cass .win{position:absolute;bottom:11%;left:21%;right:21%;height:28%;background:#050505;border-radius:40px;display:flex;justify-content:space-between;align-items:center;padding:0 9%;box-sizing:border-box;box-shadow:inset 0 2px 8px #000}
-.reel{width:28%;aspect-ratio:1;border-radius:50%;background:repeating-conic-gradient(#d9d3c6 0 12deg,#2a2826 12deg 60deg);
-  -webkit-mask:radial-gradient(circle,transparent 0 22%,#000 23%);mask:radial-gradient(circle,transparent 0 22%,#000 23%);animation:spin 4s linear infinite}
+#noise{position:absolute;inset:0;width:100%;height:100%;opacity:.07;pointer-events:none}
+.scan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(180deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.85) 100%)}
+#menu{background:radial-gradient(ellipse at 50% 30%,#1a1612 0%,#0a0908 45%,#040405 100%);gap:18px}
+.mosd{position:absolute;font:400 clamp(20px,3.2vw,30px)/1.05 var(--f-osd);color:var(--osd);letter-spacing:.05em;text-shadow:2px 0 rgba(255,40,40,.45),-2px 0 rgba(40,120,255,.45);opacity:.85}
+.mosd.tl{top:calc(env(safe-area-inset-top,0px) + 18px);left:max(20px,env(safe-area-inset-left,0px))}.mosd.tr{top:calc(env(safe-area-inset-top,0px) + 18px);right:max(20px,env(safe-area-inset-right,0px))}
+.mosd.bl{bottom:calc(env(safe-area-inset-bottom,0px) + 18px);left:max(20px,env(safe-area-inset-left,0px))}.recd{color:var(--rec);animation:blink 1.2s steps(2) infinite}
+.stage{position:relative;width:min(480px,86vw);aspect-ratio:1.9;display:grid;place-items:center;perspective:900px;flex-shrink:0}
+.spot{position:absolute;inset:-30% -20% -10%;background:radial-gradient(ellipse at 50% 55%,rgba(255,226,170,.22),rgba(255,200,120,.06) 35%,transparent 62%);animation:flick 6s infinite}
+@keyframes flick{0%,100%{opacity:1}47%{opacity:1}48%{opacity:.35}49%{opacity:.9}50%{opacity:.4}52%{opacity:1}83%{opacity:1}84%{opacity:.6}85%{opacity:1}}
+.ribbon{position:absolute;left:-10%;right:-10%;bottom:-8%;width:120%;height:60%;overflow:visible}.ribbon path{fill:none;stroke:#2b1a0e;stroke-width:5;opacity:.9}.ribbon path+path{stroke:#3a2414;stroke-width:4}
+.cass{position:relative;width:78%;aspect-ratio:1.72;background:linear-gradient(160deg,#26241f,#111 60%,#0b0b0b);border-radius:12px;transform:rotateX(26deg) rotateZ(-5deg);
+  box-shadow:0 40px 60px -10px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.05),inset 0 1px 0 rgba(255,255,255,.08);animation:float 7s ease-in-out infinite}
+@keyframes float{50%{transform:rotateX(24deg) rotateZ(-4deg) translateY(-6px)}}
+.cass .label{position:absolute;left:6%;right:6%;top:8%;height:44%;background:var(--tape);border-radius:3px;overflow:hidden;background-image:repeating-linear-gradient(transparent 0 19px,rgba(90,120,170,.25) 19px 20px);box-shadow:inset 0 0 30px rgba(120,90,40,.35)}
+.cass .label::before{content:"";position:absolute;left:0;right:0;top:0;height:15%;background:#b8402f;opacity:.85}
+.cass h1{position:absolute;left:7%;top:24%;margin:0;font:400 clamp(26px,7vw,46px)/1 var(--f-mark);color:#17140f;transform:rotate(-2deg)}
+.cass .no{position:absolute;right:6%;bottom:10%;font:400 clamp(11px,2.6vw,16px)/1 var(--f-mark);color:#a3271d;transform:rotate(-7deg)}
+.cass .date{position:absolute;left:8%;bottom:10%;font:400 clamp(10px,2.2vw,14px)/1 var(--f-mark);color:#3a3020}
+.cass .win{position:absolute;bottom:9%;left:20%;right:20%;height:30%;background:#050505;border-radius:40px;display:flex;justify-content:space-between;align-items:center;padding:0 8%;box-sizing:border-box;box-shadow:inset 0 2px 10px #000}
+.cass .tape{position:absolute;left:30%;right:30%;top:42%;height:16%;background:linear-gradient(#2a1a0e,#120a05);opacity:.9}
+.reel{position:relative;z-index:1;width:28%;aspect-ratio:1;border-radius:50%;background:repeating-conic-gradient(#d9d3c6 0 12deg,#2a2826 12deg 60deg);-webkit-mask:radial-gradient(circle,transparent 0 22%,#000 23%);mask:radial-gradient(circle,transparent 0 22%,#000 23%);animation:spin 4s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.cass .screw{position:absolute;width:8px;height:8px;border-radius:50%;background:#3a3836}
+.cass .screw{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#5a5856,#2a2826)}
+.title{margin:6px 0 0;font:400 clamp(48px,11vw,96px)/.9 var(--f-osd);letter-spacing:.22em;color:var(--osd);text-shadow:3px 0 rgba(255,40,40,.55),-3px 0 rgba(40,140,255,.5),0 0 24px rgba(255,220,180,.25);animation:jit 5s infinite;padding-left:.22em}
+.title b{color:#ff4a3a;margin-left:.3em;font-weight:400}
+@keyframes jit{0%,92%,100%{transform:none}93%{transform:translate(-3px,1px) skewX(-4deg)}95%{transform:translate(4px,-1px)}97%{transform:translate(-1px,0) skewX(3deg)}}
+.tag{margin:0;font:400 clamp(15px,2.4vw,19px)/1.4 var(--f-type);color:#bdb4a4;text-align:center;text-wrap:balance}
+.vcr{display:inline-flex;align-items:center;gap:12px;font:400 26px/1 var(--f-osd);letter-spacing:.14em;color:var(--osd);background:linear-gradient(#1d1c1a,#121110);border:1px solid #3a3733;border-radius:6px;padding:13px 26px 11px;cursor:pointer;
+  box-shadow:0 2px 0 #000,inset 0 1px 0 rgba(255,255,255,.07);transition:transform .1s,background .2s,border-color .2s}
+.vcr span{color:#ff4a3a;font-size:.8em}.vcr:hover{border-color:#8a8274;background:linear-gradient(#26241f,#161513)}.vcr:active{transform:translateY(2px);box-shadow:none}
+.vcr.small{font-size:20px;padding:9px 16px 7px;gap:9px}.vcr:disabled{opacity:.3;cursor:default}
 .btn{font:400 28px/1 var(--f-osd);letter-spacing:.12em;color:var(--osd);background:transparent;border:1px solid var(--line);border-radius:6px;padding:12px 28px 10px;cursor:pointer;transition:background .2s,border-color .2s}
-.btn:hover{background:rgba(235,230,220,.08);border-color:var(--ink)}
-.btn.small{font-size:20px;padding:9px 18px 7px}
-.btn:focus-visible,.tbtn:focus-visible,.pbtn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.btn:hover{background:rgba(235,230,220,.08);border-color:var(--ink)}.btn.small{font-size:20px;padding:9px 18px 7px}
+.btn:focus-visible,.tbtn:focus-visible,.pbtn:focus-visible,.vcr:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
 .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.meta{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
-/* how to play */
-.howto{width:min(760px,100%);text-align:left;display:grid;gap:18px}
-.howto h2{margin:0;font:400 40px/1 var(--f-osd);letter-spacing:.14em;color:var(--osd);text-align:center}
-.howto .lead{margin:0;color:var(--dim);text-align:center;line-height:1.6;text-wrap:balance}
-.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
-.rule{border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:6px;min-width:0}
-.rule h3{margin:0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
-.rule p{margin:0;font-size:14px;line-height:1.55;color:#bdb6aa}
+.meta{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim)}
+/* manual */
+#howto{background:radial-gradient(ellipse at 50% 0%,#17140f,#070708 60%);justify-content:flex-start}
+.manual{position:relative;width:min(820px,100%);margin:auto 0;display:grid;gap:22px;text-align:left}
+.mhead{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:12px}
+.eyebrow{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:#c9a96a}
+.pg{font:400 22px/1 var(--f-osd);letter-spacing:.1em;color:var(--dim)}
+.hpage{display:grid;gap:18px;animation:pin .5s ease}
+@keyframes pin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.hpage h2{margin:0;font:400 clamp(34px,6vw,54px)/1 var(--f-osd);letter-spacing:.08em;color:var(--osd);text-wrap:balance}
+.hpage .lead{margin:0;font:400 clamp(16px,2.3vw,19px)/1.6 var(--f-type);color:#cfc6b6;max-width:40em}
+.facts,.rules,.cast{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.fact,.rule,.mon{display:grid;grid-template-columns:32px 1fr;gap:14px;align-items:start;background:rgba(255,255,255,.025);border:1px solid rgba(235,230,220,.1);border-radius:10px;padding:16px;min-width:0}
+.fact svg,.rule svg{width:28px;height:28px;fill:none;stroke:#c9a96a;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.rule.warn{border-color:rgba(227,52,44,.35);background:rgba(227,52,44,.06)}.rule.warn svg{stroke:#ff6a5c}
+.rule.new{border-color:rgba(255,214,120,.35);background:rgba(255,214,120,.05)}.rule.new svg{stroke:#ffd678}
+.fact h3,.rule h3,.mon h3{margin:0 0 4px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
+.fact p,.rule p,.mon p{margin:0;font-size:14px;line-height:1.55;color:#b7afa1}
 .rule b{color:var(--ink);font-weight:600}
-.rule .warn{color:#ff7a6c}
-.mons{display:grid;gap:6px;margin:0;padding:0;list-style:none}
-.mons li{font-size:14px;line-height:1.5;color:#bdb6aa}
-.mons li b{color:var(--ink)}
-#micState{font-size:13px;color:var(--dim)}
+.mon i{width:28px;height:44px;border-radius:14px 14px 6px 6px;background:linear-gradient(var(--c),#0a0a0a);box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+.mon em{display:block;font-style:normal;font:400 14px/1.4 var(--f-type);color:#d6cdbd;margin-bottom:4px}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px}
+.keys div{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(235,230,220,.1);border-radius:10px;font-size:14px;color:#b7afa1;min-width:0}
+.keys kbd{font:600 12px/1 var(--f-ui);letter-spacing:.08em;color:var(--ink);border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;padding:7px 9px;background:#151412;white-space:nowrap}
+.rule.mic svg{stroke:#ff6a5c}
+#micState{font-size:12px;color:var(--dim);margin-top:6px}
+.mnav{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:16px}
+.dots{display:flex;gap:8px}.dots i{width:8px;height:8px;border-radius:50%;background:rgba(235,230,220,.18);transition:background .3s,transform .3s}.dots i.on{background:#ff4a3a;transform:scale(1.25)}
 /* story */
 #story{cursor:pointer}
 #storyT{width:min(640px,90vw);font:400 clamp(19px,3.2vw,26px)/1.6 var(--f-type);color:var(--ink);text-wrap:balance;min-height:5em}
@@ -179,6 +210,7 @@ body.touch #bR{bottom:calc(env(safe-area-inset-bottom,0px) + 196px)}
   <div id="topl">
     <div id="dayL">DEŇ 1<small id="clockL">23:00</small></div>
     <div class="meter" id="hpM"><span>Život</span><div class="bar"><i id="hpFill"></i></div><em id="hpTxt">100</em></div>
+    <div id="safeL" hidden>☀ Svetlo ťa chráni</div>
     <div class="meter" id="knM" hidden><span>Nôž</span><div class="bar"><i id="knFill"></i></div><em id="knTxt">3×</em></div>
   </div>
   <div id="bR"><div class="meter" id="batt"><span>Baterka</span><div class="bar"><i id="battFill"></i></div><em id="battTxt">87%</em></div></div>
@@ -200,35 +232,68 @@ body.touch #bR{bottom:calc(env(safe-area-inset-bottom,0px) + 196px)}
 
 <div class="ov" id="menu">
   <canvas id="noise" width="160" height="100"></canvas>
-  <div class="cass" aria-hidden="true">
-    <div class="label"><h1>Kazeta 13</h1><span class="no">nepúšťaj!!</span></div>
-    <div class="win"><div class="reel"></div><div class="reel"></div></div>
-    <i class="screw" style="left:3%;top:4%"></i><i class="screw" style="right:3%;top:4%"></i><i class="screw" style="left:3%;bottom:5%"></i><i class="screw" style="right:3%;bottom:5%"></i>
+  <div class="scan" aria-hidden="true"></div>
+  <div class="mosd tl" aria-hidden="true">PLAY <span class="blink">▶</span></div>
+  <div class="mosd tr" aria-hidden="true"><span class="recd">●</span> SP 00:13:13</div>
+  <div class="mosd bl" aria-hidden="true">PM 11:59<br>OKT. 14 1998</div>
+  <div class="stage" aria-hidden="true">
+    <div class="spot"></div>
+    <svg class="ribbon" viewBox="0 0 600 160" preserveAspectRatio="none"><path d="M300 10 C 380 40, 420 120, 520 110 S 600 150, 640 140" /><path d="M280 14 C 220 60, 160 150, 60 130 S -20 150, -40 160" /></svg>
+    <div class="cass">
+      <div class="label"><h1>Kazeta 13</h1><span class="no">nepúšťaj!!</span><span class="date">14.10.98</span></div>
+      <div class="win"><div class="reel"></div><div class="tape"></div><div class="reel"></div></div>
+      <i class="screw" style="left:3%;top:5%"></i><i class="screw" style="right:3%;top:5%"></i><i class="screw" style="left:3%;bottom:6%"></i><i class="screw" style="right:3%;bottom:6%"></i>
+    </div>
   </div>
-  <div class="row"><button class="btn" id="newGame" type="button">▶ NOVÁ HRA</button><button class="btn" id="contGame" type="button" hidden>↻ POKRAČOVAŤ</button></div>
-  <div class="meta">Horor · 7 dní · asi hodina · slúchadlá</div>
+  <h2 class="title">KAZETA<b>13</b></h2>
+  <p class="tag">Niektoré spomienky mali zostať na páske.</p>
+  <div class="row mbtns"><button class="vcr" id="newGame" type="button"><span>▶</span>NOVÁ HRA</button><button class="vcr" id="contGame" type="button" hidden><span>⏩</span>POKRAČOVAŤ</button></div>
+  <div class="meta">7 dní · asi hodina · hraj so slúchadlami</div>
 </div>
 
-<div class="ov scroll" id="howto" hidden>
-  <div class="howto">
-    <h2>AKO PREŽIŤ</h2>
-    <p class="lead">Máš 7 dní. Dom, kde pred 26 rokmi zmizla tvoja rodina, je plný kaziet. Každá kazeta je spomienka. Do niektorých sa dá vojsť. A niektoré nie sú spomienky, ale niečo horšie.</p>
-    <div class="rules">
-      <div class="rule"><h3>Kazety</h3><p>Kazetu vlož do televízora v obývačke a vojdi do obrazu. <b>Biely štítok</b> je spomienka. <b>Červený štítok</b> je <b>ANOMÁLIA</b>: pokrivený svet plný vecí, ktoré tam nemajú byť.</p></div>
-      <div class="rule"><h3>Baterka</h3><p class="warn">V realite nikdy nesvieť na príšery. Keď ich zasvietiš, zabijú ťa.</p><p>V anomálii je to naopak: svetlo ich odoženie. Baterka sa míňa, hľadaj batérie.</p></div>
-      <div class="rule"><h3>Príšery</h3><ul class="mons">
-        <li><b>Hosť</b> sa hýbe, keď sa nepozeráš.</li>
-        <li><b>Matka</b> nevidí, ale počuje každý krok a beh.</li>
-        <li><b>Mäsiar</b> vidí aj počuje. Je silný. Uteč a schovaj sa.</li>
-        <li><b>Sestra</b>: nepozeraj sa na ňu dlho.</li>
-        <li><b>Hlásateľ</b> žije v anomáliách a naháňa ťa.</li></ul></div>
-      <div class="rule"><h3>Schovávanie a mikrofón</h3><p>Schovať sa dá do skríň a pod posteľ. Kým sa skrývaš, <b>počúva mikrofón</b>. Keď prehovoríš alebo vykríkneš, nájdu ťa.</p><div class="row" style="justify-content:flex-start"><button class="btn small" id="micBtn" type="button">🎤 ZAPNÚŤ MIKROFÓN</button></div><p id="micState">Mikrofón je voliteľný.</p></div>
-      <div class="rule"><h3>Život a nôž</h3><p>Príšery ti uberajú život. Keď klesne na nulu, deň sa začína odznova. V kuchyni je <b>nôž</b>: keď ťa niečo chytí, stlač <b>E</b> a bodni. Nôž vydrží 3 bodnutia.</p></div>
-      <div class="rule"><h3>Hádanky</h3><p>Prezeraj obrazy, fotky, hodiny a poznámky. Skrývajú kódy, čísla a pravdu o tom, čo sa stalo.</p></div>
-      <div class="rule"><h3>Únava</h3><p>Beh ťa unaví. Uvidíš to na rozmazanom obraze a počuješ, ako ťažko dýchaš. Vtedy spomalíš.</p></div>
-      <div class="rule"><h3>Ovládanie</h3><p id="ctlTxt"><b>WASD</b> pohyb · <b>myš</b> rozhliadanie · <b>E / klik</b> použiť · <b>F</b> baterka · <b>Shift</b> beh · <b>Esc</b> pauza</p></div>
-    </div>
-    <div class="row"><button class="btn" id="howGo" type="button">ROZUMIEM ▶</button></div>
+<div class="ov" id="howto" hidden>
+  <div class="scan" aria-hidden="true"></div>
+  <div class="manual">
+    <div class="mhead"><span class="eyebrow">Návod na prežitie</span><span class="pg" id="pgNum">01 / 04</span></div>
+    <section class="hpage">
+      <h2>Dom, ktorý ťa čaká</h2>
+      <p class="lead">V októbri 1998 zmizla tvoja rodina. Po 26 rokoch sa vraciaš do domu, kde zostali iba kazety a niečo, čo na teba čakalo.</p>
+      <div class="facts">
+        <div class="fact"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><div><h3>7 dní</h3><p>Každý deň nové kazety, nové hádanky a niečo nové v dome. Keď zomrieš, deň sa začne odznova.</p></div></div>
+        <div class="fact"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><path d="M10 12h4"/></svg><div><h3>Kazety</h3><p>Vlož kazetu do televízora v obývačke a vojdi do obrazu. Niektoré sú spomienky. Niektoré nie. Na štítku to nenájdeš.</p></div></div>
+        <div class="fact"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l-3 2"/></svg><div><h3>Pravda</h3><p>Hodiny, zrkadlá, fotky. Všímaj si drobnosti. Nie všetko, čo vyzerá ako realita, ňou aj je.</p></div></div>
+      </div>
+    </section>
+    <section class="hpage" hidden>
+      <h2>Pravidlá prežitia</h2>
+      <div class="rules">
+        <div class="rule warn"><svg viewBox="0 0 24 24"><path d="M3 10h10l4-4v12l-4-4H3z"/><path d="M19 9l3-2M19 15l3 2M20 12h3"/></svg><div><h3>Baterka</h3><p><b>V realite nikdy nesvieť na príšery.</b> Zabijú ťa. V pokrivenom svete je to naopak, svetlo ich odoženie. Baterka sa míňa, hľadaj batérie.</p></div></div>
+        <div class="rule new"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M12 7v5"/></svg><div><h3>Vypínače</h3><p>V niektorých izbách ešte funguje svetlo. Vypínač je pri dverách. <b>Do rozsvietenej izby si netrúfnu.</b> Žiarovky však občas zhasnú.</p></div></div>
+        <div class="rule"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="1"/><path d="M12 2v20M10 12h0M14 12h0"/></svg><div><h3>Schovávanie</h3><p>Skrine a priestor pod posteľou. Kým sa skrývaš, počúva mikrofón. Buď ticho.</p></div></div>
+        <div class="rule"><svg viewBox="0 0 24 24"><path d="M14 3l7 7-9 9H5v-7z"/><path d="M5 19l-2 2"/></svg><div><h3>Život a nôž</h3><p>Príšery ti uberajú život. Keď ťa niečo chytí a máš nôž, stlač <b>E</b> a bodni. Nôž vydrží 3 bodnutia.</p></div></div>
+        <div class="rule"><svg viewBox="0 0 24 24"><path d="M4 14c2-6 6-6 8 0s6 6 8 0"/><path d="M4 9c2-4 6-4 8 0s6 4 8 0"/></svg><div><h3>Únava</h3><p>Beh ťa unaví. Spoznáš to podľa ťažkého dychu a rozmazaného obrazu.</p></div></div>
+        <div class="rule"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg><div><h3>Hádanky</h3><p>Obrazy, hodiny, fotky a poznámky skrývajú kódy aj to, čo sa naozaj stalo.</p></div></div>
+      </div>
+    </section>
+    <section class="hpage" hidden>
+      <h2>Kto je v dome</h2>
+      <div class="cast">
+        <div class="mon"><i style="--c:#8a8578"></i><div><h3>Hosť</h3><em>Vysoký. Bez tváre.</em><p>Hýbe sa iba vtedy, keď sa naň nepozeráš.</p></div></div>
+        <div class="mon"><i style="--c:#c9c1b2"></i><div><h3>Matka</h3><em>Zlomený krk, dlhé čierne vlasy.</em><p>Nevidí. Počuje každý krok, beh aj dvere.</p></div></div>
+        <div class="mon"><i style="--c:#8f2a1d"></i><div><h3>Mäsiar</h3><em>Vrece na hlave, sekáčik v ruke.</em><p>Vidí aj počuje. Uteč, schovaj sa, alebo bež do svetla.</p></div></div>
+        <div class="mon"><i style="--c:#5d2633"></i><div><h3>Sestra</h3><em>Tvár omotaná páskou z kazety.</em><p>Nepozeraj sa na ňu dlho.</p></div></div>
+        <div class="mon"><i style="--c:#3a3d46"></i><div><h3>???</h3><em>Šum namiesto tváre.</em><p>Objaví sa tam, kde nič nie je tak, ako má byť.</p></div></div>
+      </div>
+    </section>
+    <section class="hpage" hidden>
+      <h2>Ovládanie</h2>
+      <div class="keys" id="keysGrid">
+        <div><kbd>W A S D</kbd><span>pohyb</span></div><div><kbd>Myš</kbd><span>rozhliadanie</span></div><div><kbd>E</kbd><span>použiť, schovať sa, bodnúť</span></div>
+        <div><kbd>F</kbd><span>baterka</span></div><div><kbd>Shift</kbd><span>beh</span></div><div><kbd>Esc</kbd><span>pauza</span></div>
+      </div>
+      <div class="rule mic"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg><div><h3>Mikrofón</h3><p>Voliteľný. Počúva iba vtedy, keď sa skrývaš.</p><div class="row" style="justify-content:flex-start;margin-top:8px"><button class="vcr small" id="micBtn" type="button"><span>●</span>ZAPNÚŤ</button></div><p id="micState">Mikrofón je vypnutý.</p></div></div>
+    </section>
+    <div class="mnav"><button class="vcr small" id="hPrev" type="button"><span>◀</span>SPÄŤ</button><div class="dots" id="dots"><i></i><i></i><i></i><i></i></div><button class="vcr small" id="hNext" type="button">ĎALEJ<span>▶</span></button></div>
   </div>
 </div>
 
@@ -247,7 +312,7 @@ const $=id=>document.getElementById(id);
 if(!window.THREE){ $('menu').hidden=true; $('err').hidden=false; return; }
 const T=THREE;
 const isTouch=!!(window.matchMedia&&matchMedia('(pointer: coarse)').matches);
-if(isTouch){document.body.classList.add('touch');$('ctlTxt').innerHTML='<b>Ľavý palec</b> pohyb · <b>pravý palec</b> rozhliadanie · <b>Použiť</b> vziať, otvoriť, schovať sa, bodnúť · <b>Svetlo</b> baterka · <b>Beh</b> zapne beh';}
+if(isTouch){document.body.classList.add('touch');$('keysGrid').innerHTML='<div><kbd>Ľavý palec</kbd><span>pohyb</span></div><div><kbd>Pravý palec</kbd><span>rozhliadanie</span></div><div><kbd>Použiť</kbd><span>vziať, schovať sa, bodnúť</span></div><div><kbd>Svetlo</kbd><span>baterka</span></div><div><kbd>Beh</kbd><span>zapne beh</span></div>';}
 
 (function(){const c=$('noise'),g=c.getContext('2d'),im=g.createImageData(160,100);
  function f(){if($('menu').hidden)return;for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255;im.data[i]=im.data[i+1]=im.data[i+2]=v;im.data[i+3]=255;}g.putImageData(im,0,0);setTimeout(()=>requestAnimationFrame(f),50);}f();})();
@@ -711,7 +776,7 @@ const angel=makeHost();scene.add(angel);angel.visible=false;// memory-world stal
 /* ---------- state ---------- */
 const S={world:'real',zone:'house',day:1,running:false,paused:false,ui:false,busy:false,dead:false,time:0,dayT:0,
  x:1.4,z:11.5,yaw:-Math.PI/2,pitch:0,bob:0,stepAcc:0,shake:0,clock:0,flash:false,batt:90,stam:100,tired:false,hp:100,hurtT:9,knife:0,
- hidden:null,inserted:null,feed:null,canEnter:false,canExit:false,power:true,lethal:true,flick:0,flashKill:0,forceFlash:false,qte:null,noises:[],fear:0};
+ hidden:null,lit:{},inserted:null,feed:null,canEnter:false,canExit:false,power:true,lethal:true,flick:0,flashKill:0,forceFlash:false,qte:null,noises:[],fear:0};
 let F={};const has=id=>!!F['got_'+id];
 const PRE={
  real:{hemi:.1,hc:0x7d8db0,gc:0x0d0b09,moon:.16,fog:[0x000000,.13],vhs:0,anom:0,win:0x18203a,grain:.075,lp:18000},
@@ -745,8 +810,10 @@ function applyWorld(w,feed){const k=WKIND[w],P=PRE[k];
  if(k==='mem'&&!S.blackout){pool=POOLS.mem;inten=1;}else if(k==='night'){pool=[[16.7,.35,8.85],[11.5,2.1,12.5],[4.5,2.1,3.5]];col=0xffa060;inten=.55;dist=6.5;}
  else if(k==='anom'){pool=POOLS.anom;col=0xff2010;inten=.95;dist=7.5;}else if(k==='hosp'){pool=POOLS.hosp;col=0xe9f2ff;inten=1.25;dist=10;}
  else if(S.zone==='base'&&S.power&&!feed){pool=POOLS.base;col=0xffb070;inten=.6;dist=7;}
+ else if(k==='real'&&S.power){const on=Object.keys(LIT).filter(r=>S.lit[r]);pool=on.flatMap(r=>LIT[r].lamps);S.poolRooms=on.flatMap(r=>LIT[r].lamps.map(()=>r));col=0xffcf96;inten=2.0;dist=10.5;}
+ if(!(k==='real'&&S.power&&S.zone!=='base'))S.poolRooms=[];
  PL.forEach((l,i)=>{const p=pool[i];if(p){l.position.set(p[0],p[1],p[2]);l.color.setHex(col);l.intensity=inten;l.distance=dist;}else l.intensity=0;});
- lampFix.forEach(m=>m.emissiveIntensity=(k==='mem'&&!S.blackout)?.9:0);bulbM.emissiveIntensity=(isRealW(w)&&S.power)?.9:0;
+ lampFix.forEach(m=>m.emissiveIntensity=(k==='mem'&&!S.blackout)?.9:0);if(k==='real'&&S.power)for(const r in LIT)if(S.lit[r])LIT[r].fix.forEach(i=>lampFix[i].emissiveIntensity=.95);bulbM.emissiveIntensity=(isRealW(w)&&S.power)?.9:0;
  tvLight.intensity=isRealW(w)&&S.power?.55:(k==='night'?.35:.2);
  scene.fog.color.setHex(P.fog[0]);scene.fog.density=P.fog[1];scene.background.setHex(P.fog[0]);winMats.forEach(m=>m.color.setHex(P.win));
  famPhotoM.map=texFam[w==='fake'?1:0];
@@ -894,13 +961,13 @@ function smallObj(kind,x,y,z){const g=new T.Group();g.position.set(x,y,z);
 const real=w=>isRealW(w);
 item('tape1',tapeObj('1','VEČERA',0,4.35,.457,3.15,.3),'Vziať kazetu 1 · VEČERA',w=>real(w)&&S.day===1,()=>{});
 item('tape2',tapeObj('2','NARODENINY',0,9.85,.53,12.3,-.6),'Vziať kazetu 2 · NARODENINY',w=>real(w)&&S.day===1);
-item('tape3',tapeObj('3','ANOMÁLIA',1,21.3,.79,1.05,.2),'Vziať kazetu 3 · ANOMÁLIA',w=>real(w)&&S.day===2);
+item('tape3',tapeObj('3','VYSIELANIE',0,21.3,.79,1.05,.2),'Vziať kazetu 3 · VYSIELANIE',w=>real(w)&&S.day===2);
 item('tape4',tapeObj('4','HODINY',0,12.7,.787,3.5,.5),'Vziať kazetu 4 · HODINY',w=>real(w)&&S.day===3);
 item('tape5',tapeObj('5','DIEŤA',0,49,.915,8.8,1.1),'Vziať kazetu 5 · DIEŤA',w=>real(w)&&S.day===3);
-item('tape6',tapeObj('6','ANOMÁLIA',1,21.2,.915,14.55,.1),'Vziať kazetu 6 · ANOMÁLIA',w=>real(w)&&S.day===4&&!!F.photosOk);
+item('tape6',tapeObj('6','HRAČKY',0,21.2,.915,14.55,.1),'Vziať kazetu 6 · HRAČKY',w=>real(w)&&S.day===4&&!!F.photosOk);
 item('tape7',tapeObj('7','NOC',0,17.6,.515,14.6,.7),'Vziať kazetu 7 · NOC',w=>real(w)&&S.day===5&&!!F.powerOn);
 item('tapeX',tapeObj('?','',0,18.72,.935,10.2,1.2),'Vziať kazetu bez čísla',w=>w==='fake');
-item('tape13',tapeObj('13','REALITA',1,46.2,.915,11.2,.4),'Vziať kazetu 13 · REALITA',w=>w==='real'&&S.day===6&&!!F.revealed);
+item('tape13',tapeObj('13','REALITA',0,46.2,.915,11.2,.4),'Vziať kazetu 13 · REALITA',w=>w==='real'&&S.day===6&&!!F.revealed);
 item('knife',smallObj('knife',12.2,.925,.45),'Vziať nôž',w=>real(w),()=>{S.knife=3;msg('Nôž. Keď ťa niečo chytí, stlač E a bodni.',4);});
 item('keyKid',smallObj('key',10.2,.93,.4),'Vziať kľúč od detskej izby',w=>w==='t1',()=>{objective('Vráť sa k televízoru.');S.canExit=true;say(['MAMA','Ešte jeden tanier. Pre hosťa.',2.8]);});
 item('keyBase',smallObj('key',8.45,.25,.72),'Vziať kľúč od pivnice',w=>real(w)&&!!F.clockOk);
@@ -922,6 +989,18 @@ note('n4',23.68,.605,11.42,()=>real(S.world)&&S.day>=4);note('n5',18.3,.405,13.5
 
 /* ---------- interactables ---------- */
 const V=(x,y,z)=>new T.Vector3(x,y,z);
+const LIT={living:{r:[0,0,9,8],fix:[0,10],lamps:[[4.5,2.3,3.8],[7.7,1.45,1.6]],sw:[5.7,1.3,7.9,Math.PI],name:'obývačke'},kitchen:{r:[9,0,16,6],fix:[1],lamps:[[12.5,2.3,3.4]],sw:[9.1,1.3,2.1,Math.PI/2],name:'kuchyni'},
+ kid:{r:[9,9,15,15],fix:[6],lamps:[[12,2.3,12]],sw:[11.15,1.3,9.1,0],name:'detskej izbe'},bed:{r:[19,9,24,15],fix:[9],lamps:[[21.5,2.3,12]],sw:[20.65,1.3,9.1,0],name:'spálni'}};
+const inRect=(x,z,r,m)=>x>r[0]+m&&x<r[2]-m&&z>r[1]+m&&z<r[3]-m;
+function litAt(x,z,m){if(!isRealW(S.world)||!S.power||zoneOf(x)!=='house')return null;for(const k in LIT)if(S.lit[k]&&inRect(x,z,LIT[k].r,m||0))return k;return null;}
+const safeNow=()=>!!litAt(S.x,S.z,.15);
+const swMats={};
+function switchPlate(x,y,z,ry,key){const g=new T.Group();g.position.set(x,y,z);g.rotation.y=ry;G.house.add(g);bx(.09,.13,.015,M(0xd8d0bc,.5),0,0,0,g,false);
+ const tg=new T.MeshStandardMaterial({color:0x9a9284,emissive:0xffc070,emissiveIntensity:0,roughness:.5});const t=new T.Mesh(new T.BoxGeometry(.022,.04,.02),tg);t.position.z=.012;g.add(t);g.userData.tog=t;if(key)swMats[key]=g;return g;}
+for(const k in LIT){const w=LIT[k].sw;switchPlate(w[0],w[1],w[2],w[3],k);
+ I({pos:()=>V(w[0],w[1],w[2]),r:2.0,when:()=>isRealW(S.world)&&!S.hidden,label:()=>S.lit[k]?'Zhasnúť svetlo':'Rozsvietiť',use:()=>{A.click();if(!S.power){say(['','Vypínač cvakol. Nič. Nejde prúd.',2.4]);return;}
+  S.lit[k]=!S.lit[k];applyWorld(S.world);if(S.lit[k]){A.noise({type:'bandpass',f:120,q:4,g:.25,d:.6});if(!F.litTip){F.litTip=1;msg('Svetlo. Sem si netrúfnu. Aspoň zatiaľ.',3.5);}}}});}
+for(const [x,y,z,ry] of[[10.2,1.3,6.1,0],[3.0,1.3,8.1,0],[16.1,1.3,9.1,0],[17.2,1.3,.1,0]]){switchPlate(x,y,z,ry);I({pos:()=>V(x,y,z),r:1.8,when:()=>isRealW(S.world)&&!S.hidden,label:()=>'Vypínač',use:()=>{A.click();say(['',['Cvak. Nič. Žiarovka je prasknutá.','Cvak. Tma. Niekto vykrútil žiarovku.','Cvak. Iskra. Nič.'][(Math.random()*3)|0],2.4]);}});}
 paintPos.forEach((p,i)=>I({pos:()=>V(p[0],p[1],p[2]),r:2.6,when:()=>S.world!=='hosp',label:()=>'Prezrieť obraz',use:()=>showImage(PAINT[i],'Obraz '+['I','II','III','IV'][i])}));
 I({pos:()=>V(10.6,1.6,6.1),r:2.2,when:()=>S.world!=='hosp',label:()=>'Pozrieť fotku',use:()=>showImage(famCv[S.world==='fake'?1:0],S.world==='fake'?'Je na nej päť ľudí. Ten piaty je vyšší než dvere.':'Mama, otec, Lucia a ty. Október 1998.')});
 I({pos:()=>V(.1,1.7,9.6),r:2.4,when:()=>S.world!=='hosp',label:()=>'Pozrieť portrét',use:()=>showImage(GRANNY,'Babička. Niekto jej vyškrabal oči.')});
@@ -998,7 +1077,7 @@ function micHeard(v){if(!S.hidden||S.time-MIC.heardT<2.5)return;MIC.heardT=S.tim
  for(const t in MON){const m=MON[t];if(m.active&&m.zone===S.zone&&m.visibleIn(S.world)&&Math.hypot(m.x-S.x,m.z-S.z)<18){m.huntHide=S.hidden;m.state='chase';m.tx=S.x;m.tz=S.z;}}}
 
 /* ---------- damage, death, knife ---------- */
-function damage(n,cause){if(S.dead)return;S.hp=Math.max(0,S.hp-n);S.hurtT=0;A.hurt();S.shake=.9;postU.dmg.value=1;$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=S.hp<35?.5:0,350);if(S.hp<=0)die(cause+' ťa dostal'+(cause==='Matka'||cause==='Sestra'?'a':'')+'.');}
+function damage(n,cause){if(S.dead||safeNow())return;S.hp=Math.max(0,S.hp-n);S.hurtT=0;A.hurt();S.shake=.9;postU.dmg.value=1;$('dmg').style.opacity=1;setTimeout(()=>$('dmg').style.opacity=S.hp<35?.5:0,350);if(S.hp<=0)die(cause+' ťa dostal'+(cause==='Matka'||cause==='Sestra'?'a':'')+'.');}
 function die(text,m){if(S.dead)return;S.dead=true;S.busy=true;A.chase(false);if(S.hidden){S.hidden=null;$('hideOv').hidden=true;}if(m)deathPose(m);A.stinger();faceFlash(260);postU.glitch.value=1;S.shake=1.2;
  setTimeout(()=>{postU.glitch.value=0;postU.fade.value=1;$('deathP').textContent=text+' Deň '+S.day+' sa začína odznova.';$('death').hidden=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(e){}},1300);}
 const HEADY={host:2.15,butcher:2.02,mother:1.5,sister:1.12,tv:1.95};
@@ -1020,17 +1099,17 @@ function monMove(m,tx,tz,sp,dt){m.pathT-=dt;const d=Math.hypot(tx-m.x,tz-m.z);le
  if(!(d<7&&los(m.x,m.z,tx,tz))){if(m.pathT<=0||!m.path){m.pathT=.45;m.path=bfs(m.x,m.z,tx,tz);}
   if(m.path&&m.path.length){let n=m.path[0];if(Math.hypot(n[0]-m.x,n[1]-m.z)<.3){m.path.shift();n=m.path[0]||[tx,tz];}nx=n[0];nz=n[1];}else{nx=m.x;nz=m.z;}}
  const dx=nx-m.x,dz=nz-m.z,l=Math.hypot(dx,dz);m.moved=0;
- if(l>.02){const st=Math.min(l,sp*dt);m.x+=dx/l*st;m.z+=dz/l*st;m.moved=st;const ty=Math.atan2(dx,dz);let df=ty-m.rot;while(df>Math.PI)df-=Math.PI*2;while(df<-Math.PI)df+=Math.PI*2;m.rot+=df*Math.min(1,dt*7);
+ if(l>.02){const st=Math.min(l,sp*dt);const ox=m.x+dx/l*st,oz=m.z+dz/l*st;if(litAt(ox,oz,-.35)&&!litAt(m.x,m.z,-.35)){m.blockT=(m.blockT||0)+dt;faceTo(m,S.x,S.z,dt);return d;}m.x=ox;m.z=oz;m.moved=st;const ty=Math.atan2(dx,dz);let df=ty-m.rot;while(df>Math.PI)df-=Math.PI*2;while(df<-Math.PI)df+=Math.PI*2;m.rot+=df*Math.min(1,dt*7);
   m.walkT+=st*3.1;walkAnim(m.mesh,m.walkT,.42*Math.min(1,sp/1.4));}
  for(const dd of DOORL)if(!dd.open&&!dd.locked&&Math.hypot(dd.x-m.x,dd.z-m.z)<.95){setDoor(dd.id,true);const s=spat(dd.x,dd.z);A.creak(s.pan);}
  return d;}
 function faceTo(m,x,z,dt){const ty=Math.atan2(x-m.x,z-m.z);let df=ty-m.rot;while(df>Math.PI)df-=Math.PI*2;while(df<-Math.PI)df+=Math.PI*2;m.rot+=df*Math.min(1,dt*5);}
-function randWP(m,zone){const L=WP[zone||m.zone];for(let k=0;k<12;k++){const w=L[(Math.random()*L.length)|0];if(Math.hypot(w[0]-m.x,w[1]-m.z)>3&&bfs(m.x,m.z,w[0],w[1]))return w;}return L[0];}
+function randWP(m,zone){const L=WP[zone||m.zone];for(let k=0;k<14;k++){const w=L[(Math.random()*L.length)|0];if(Math.hypot(w[0]-m.x,w[1]-m.z)>3&&!litAt(w[0],w[1],-.5)&&bfs(m.x,m.z,w[0],w[1]))return w;}return L[0];}
 function teleportNear(m,dmin,dmax){const L=WP[S.zone];for(let k=0;k<40;k++){const w=L[(Math.random()*L.length)|0];const x=w[0]+(Math.random()-.5),z=w[1]+(Math.random()-.5),d=Math.hypot(x-S.x,z-S.z);
- if(d<dmin||d>dmax)continue;m.x=x;m.z=z;if(!seenByPlayer(m,.9))return true;}return false;}
+ if(d<dmin||d>dmax||litAt(x,z,-.5))continue;m.x=x;m.z=z;if(!seenByPlayer(m,.9))return true;}return false;}
 function teleportFar(m){const L=WP[m.zone==='hosp'?'house':m.zone];let best=L[0],bd=0;for(const w of L){const d=Math.hypot(w[0]-S.x,w[1]-S.z);if(d>bd&&!(seenByPlayer({x:w[0],z:w[1],zone:zoneOf(w[0])}))){bd=d;best=w;}}m.x=best[0];m.z=best[1];m.path=null;}
 const ARRIVE={house:[6.5,13.9],base:[42.4,1.9]};
-function lightCheck(m,dt){if(!m.mesh.visible||S.hidden||m.stun>0||m.flee>0){m.lit=0;return;}const fi=flash.intensity;if(fi<.6){m.lit=Math.max(0,m.lit-dt*2);return;}
+function lightCheck(m,dt){if(!m.mesh.visible||S.hidden||m.stun>0||m.flee>0||safeNow()){m.lit=0;return;}const fi=flash.intensity;if(fi<.6){m.lit=Math.max(0,m.lit-dt*2);return;}
  const cp=camera.position,v=new T.Vector3(m.x-cp.x,HEADY[m.type]*.7-cp.y,m.z-cp.z),d=v.length();v.normalize();const fw=new T.Vector3();camera.getWorldDirection(fw);
  if(d>13||v.dot(fw)<Math.cos(.38)||!los(S.x,S.z,m.x,m.z)){m.lit=Math.max(0,m.lit-dt*2);return;}m.lit+=dt;
  if(isAnom(S.world)){if(m.lit>.3){m.flee=6;m.lit=0;m.path=null;const s=spat(m.x,m.z);A.shriek(s.pan);}return;}
@@ -1052,8 +1131,10 @@ function updateMon(m,dt){if(!m.active||!m.visibleIn(S.world)){m.mesh.visible=fal
  // hiding hunt
  if(m.huntHide&&S.hidden===m.huntHide){const h=m.huntHide;if(monMove(m,h.out[0],h.out[1],m.speed,dt)<.6){m.huntHide=null;unhide();A.shriek(s.pan);faceFlash(120);monAttack(m);}syncMon(m);return;}
  if(m.huntHide&&!S.hidden)m.huntHide=null;
+ if(litAt(m.x,m.z,-.2)&&!m.flee){m.flee=2.5;m.path=null;}
+ if(safeNow()&&(m.state==='chase'||m.state==='hunt')){m.safeT=(m.safeT||0)+dt;if(m.safeT>3){m.safeT=0;m.state=m.type==='mother'?'wander':'patrol';m.tgt=null;m.alert=0;if(m.type==='butcher')A.grunt(Math.min(1,s.vol*2),s.pan);}}else m.safeT=0;
  BEH[m.type](m,dt,d,s);
- if(!S.hidden&&same&&d<.85&&m.cool<=0&&!m.gone&&m.contact!==false)monAttack(m);
+ if(!S.hidden&&same&&d<.85&&m.cool<=0&&!m.gone&&m.contact!==false&&!safeNow())monAttack(m);
  syncMon(m);}
 function syncMon(m){m.mesh.position.x=m.x;m.mesh.position.z=m.z;m.mesh.rotation.y=m.rot;}
 function sees(m,range,fov){if(S.hidden||m.zone!==S.zone)return false;const dx=S.x-m.x,dz=S.z-m.z,d=Math.hypot(dx,dz);if(d>range)return false;let a=Math.atan2(dx,dz)-m.rot;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return Math.abs(a)<fov&&los(m.x,m.z,S.x,S.z);}
@@ -1131,9 +1212,9 @@ function startTape(id){const W={'1':'t1','2':'t2','3':'a3','4':'t4','5':'t5','6'
   setMon('host',{x:15,z:3,mode:'patrol',worlds:['t7'],wp:1,tapeOnly:true});objective('Dostaň sa do detskej izby. Hosť ťa nesmie vidieť.');S.objText2='Dostaň sa do detskej izby. Hosť ťa nesmie vidieť.';setTimeout(()=>{if(S.world==='t7')say(['','Svetlo a beh ťa prezradia.',3]);},2500);}
  if(W==='a3'||W==='a6'){setOSD(true,'??:??','?? ?? ????',false,true);DOORL.forEach(d=>{if(d.id!=='front'&&d.id!=='base')setDoor(d.id,true,false,true);});
   setMon('tv',{x:22,z:13,worlds:['a3','a6'],delay:6,tapeOnly:true,speed:W==='a6'?2.9:2.6});
-  if(W==='a6'){const s=MON.sister;Object.assign(s,{active:true,mode:'chase',x:2,z:12,contact:true,present:1,worlds:['real','a6']});pose(s.mesh);objective('Nájdi 4 Luciine hračky. Svetlo ich odoženie.');}
-  else objective('Nájdi 3 cievky pásky. Tu ich svetlo odoženie.');
-  msg('ANOMÁLIA. Tu je všetko naopak. Svieť na ne.',4);}}
+  if(W==='a6'){const s=MON.sister;Object.assign(s,{active:true,mode:'chase',x:2,z:12,contact:true,present:1,worlds:['real','a6']});pose(s.mesh);objective('Nájdi 4 Luciine hračky.');}
+  else objective('Niečo tu nie je v poriadku. Nájdi 3 cievky pásky.');
+}}
 const _exitTape=exitTape;
 exitTape=async function(){const w=S.world;await _exitTape();if(doorSnap){doorSnap.forEach(([id,o,l])=>setDoor(id,o,l,true));doorSnap=null;}
  if(w==='t7'){F.done_t7=1;MON.host.active=false;}if(w==='t4')F.t4seen=1;applyWorld('real');};
@@ -1187,7 +1268,10 @@ function end(t,p){S.running=false;$('endT').textContent=t;$('endP').textContent=
 const SC={t:50,amb:12,chop:null,first:true};
 const WHISPERS=['…pozri sa za seba…','…nie si tu sám…','…vráť sa do kazety…','…on ťa vidí…','…prečo ma tu necháš?…','…zlatko, poď dole do pivnice…','…už je blízko…','…zhasni to svetlo…','…počujem ťa dýchať…','…toto nie je tvoj dom…'];
 function scareOK(){return S.running&&!S.busy&&!S.dead&&!S.hidden&&!S.qte&&!S.inserted&&!S.feed&&!S.behind&&(isRealW(S.world)||S.world==='t1')&&!Object.values(MON).some(m=>m.active&&m.state==='chase');}
-function scareTick(dt){if(!scareOK())return;SC.t-=dt;if(SC.t>0)return;SC.t=(34-S.day*2.5)+Math.random()*34;const o=isRealW(S.world)?['behind','behind','slam','run','face','dark']:['slam','run','face'];doScare(o[(Math.random()*o.length)|0]);}
+function lightsTick(dt){const on=Object.keys(S.lit).filter(k=>S.lit[k]);if(!on.length||!isRealW(S.world)||S.busy){return;}SC.lt=(SC.lt===undefined?70:SC.lt)-dt;
+ if(S.roomFlick){S.roomFlick.t-=dt;if(S.roomFlick.t<=0){const k=S.roomFlick.k;if(S.roomFlick.off){S.lit[k]=false;A.noise({type:'highpass',f:2500,g:.5,d:.12});A.noise({brown:true,f:200,g:.5,d:.3});say(['','Svetlo v '+LIT[k].name+' zhaslo.',2.6]);}S.roomFlick=null;applyWorld(S.world);}return;}
+ if(SC.lt>0)return;SC.lt=55+Math.random()*60;const k=on[(Math.random()*on.length)|0];S.roomFlick={k,t:1.8,off:Math.random()<(litAt(S.x,S.z,.15)===k?.35:.7)};A.noise({type:'bandpass',f:120,q:5,g:.35,d:1.6});}
+function scareTick(dt){if(!scareOK()||safeNow())return;SC.t-=dt;if(SC.t>0)return;SC.t=(34-S.day*2.5)+Math.random()*34;const o=isRealW(S.world)?['behind','behind','slam','run','face','dark']:['slam','run','face'];doScare(o[(Math.random()*o.length)|0]);}
 async function doScare(k){
  if(k==='behind'){const b=fwd().multiplyScalar(-2.1),x=S.x+b.x,z=S.z+b.z;const [cx,cz]=collide(x,z,.2);if(Math.hypot(cx-x,cz-z)>.05||!los(S.x,S.z,x,z))return doScare('run');
   pose(angel);place(angel,x,z,Math.atan2(S.x-x,S.z-z));S.angelOn=true;S.behind={t:0};A.whisper(.5,0);return;}
@@ -1214,7 +1298,7 @@ function resetDoors(){setDoor('lk',false,false,true);setDoor('kh',true,false,tru
  compart.position.z=F.clockOk?.9:.665;compart.rotation.y=F.clockOk?1.2:0;}
 async function startDay(n,keep){S.day=n;S.dead=false;S.busy=true;$('death').hidden=true;$('panel').hidden=true;S.ui=false;
  if(!keep||!SNAP||SNAP.day!==n){SNAP={day:n,F:JSON.parse(JSON.stringify(F)),batt:Math.max(S.batt,60),knife:S.knife};try{localStorage.setItem('k13',JSON.stringify(SNAP));}catch(e){}}
- F=JSON.parse(JSON.stringify(SNAP.F));S.batt=SNAP.batt;S.knife=SNAP.knife;Object.assign(S,{hp:100,stam:100,tired:false,hidden:null,qte:null,inserted:null,feed:null,canEnter:false,canExit:false,canSleep:0,power:true,lethal:true,blackout:false,candlesOut:false,angelOn:false,flash:false,lockCam:false,camY:0,behind:null,dayT:0,liveStage:0,forceFlash:false,flashKill:0});
+ F=JSON.parse(JSON.stringify(SNAP.F));S.batt=SNAP.batt;S.knife=SNAP.knife;Object.assign(S,{hp:100,stam:100,tired:false,hidden:null,qte:null,inserted:null,feed:null,canEnter:false,canExit:false,canSleep:0,power:true,lethal:true,blackout:false,candlesOut:false,angelOn:false,flash:false,lockCam:false,camY:0,behind:null,lit:{},roomFlick:null,dayT:0,liveStage:0,forceFlash:false,flashKill:0});
  $('hideOv').hidden=true;$('qte').hidden=true;me.visible=false;hostFeed.visible=false;monsOff();for(const t in MON){MON[t].tapeOnly=false;MON[t].frozenPose=false;}resetDoors();setOSD(false);objective('');tvU.mode.value=1;doorSnap=null;
  postU.fade.value=1;$('dayCardT').textContent='DEŇ '+n;$('dayCardS').textContent=DAYNAME[n];$('dayCard').classList.add('show');$('dayL').firstChild.nodeValue='DEŇ '+n;
  runId++;setWorld('real');S.zone='house';SC.t=40+Math.random()*20;SC.amb=10;SC.chop=null;
@@ -1241,7 +1325,7 @@ const DAYS={
  objective('Pracovňa vedľa kuchyne je zamknutá na kód. Choď sa pozrieť.');
  await until(()=>F.sawKeypad||F.studyOpen);objective('Nájdi obrazy s rímskymi číslami I až IV. Spočítaj, čo je na nich.');
  await until(()=>F.studyOpen);objective('Prehľadaj pracovňu.');
- await until(()=>has('tape3'));objective('Pusti kazetu 3. Je to ANOMÁLIA.');
+ await until(()=>has('tape3'));objective('Pusti kazetu 3.');
  await until(()=>F.done_a3&&isRealW(S.world));objective('Choď spať na gauč. Potichu.');S.canSleep=2;await until(()=>F.slept2);await endDay();},
 3:async()=>{spawn(4.5,6.2,0);setMon('mother',{x:21.5,z:11,worlds:['real'],state:'wander'});setMon('butcher',{x:48.2,z:8.8,state:'idle',idleT:1e9,roam:false,worlds:['real'],rot:Math.PI/2});
  await wait(1200);msg('Z pivnice sa ozýva sekanie.',3.5);await wait(3200);objective('Na kuchynskom stole leží kazeta.');
@@ -1255,7 +1339,7 @@ const DAYS={
 4:async()=>{spawn(4.5,6.2,0);setMon('sister',{x:12,z:12,mode:'haunt',worlds:['real','a6'],resp:14});setMon('butcher',{x:12.5,z:7.5,state:'patrol',roam:true,roamBoth:true,worlds:['real']});
  await wait(1200);msg('Spálňa rodičov je po 26 rokoch odomknutá.',3.5);await wait(3800);msg('Ak uvidíš dievča s páskou na tvári, nepozeraj sa na ňu.',4.5);objective('Choď do spálne rodičov.');
  await until(()=>S.x>19&&S.z>9&&S.zone==='house');objective('Na komode sú fotky Lucie. Zoraď ich od najmladšej po najstaršiu.');
- await until(()=>F.photosOk);objective('V šuplíku komody je kazeta 6.');await until(()=>has('tape6'));objective('Pusti kazetu 6. ANOMÁLIA.');
+ await until(()=>F.photosOk);objective('V šuplíku komody je kazeta 6.');await until(()=>has('tape6'));objective('Pusti kazetu 6.');
  await until(()=>F.done_a6&&isRealW(S.world));objective('Choď spať.');S.canSleep=4;await until(()=>F.slept4);await endDay();},
 5:async()=>{spawn(4.5,6.2,0);S.power=false;F.baseOpen=1;DOORS.base.locked=false;applyWorld('real');tvU.on.value=0;
  setMon('mother',{x:20,z:7.5,worlds:['real'],state:'wander'});setMon('butcher',{x:47,z:8,state:'patrol',roam:true,worlds:['real']});setMon('sister',{x:12,z:12,mode:'haunt',worlds:['real'],resp:40});
@@ -1314,7 +1398,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
   if(S.qte){S.qte.t-=dt;$('qteFill').style.width=Math.max(0,S.qte.t/S.qte.max*100)+'%';if(S.qte.t<=0)qteResolve(false);}
   else if(!S.busy&&!S.dead){if(!S.hidden&&!S.lockCam)movePlayer(dt);S.zone=zoneOf(S.x);
    for(const k in MON)updateMon(MON[k],dt);updateMem(dt,t);if(S.world==='fake')updateLive();else me.visible=false;
-   scareTick(dt);ambientTick(dt);updateBehind(dt);}
+   scareTick(dt);ambientTick(dt);updateBehind(dt);lightsTick(dt);}
   S.noises.length=0;
   const chasing=!S.dead&&Object.values(MON).some(m=>m.active&&m.visibleIn(S.world)&&m.zone===S.zone&&!m.stun&&(m.state==='chase'&&!(m.type==='host'&&m.mode==='stalk')||(m.type==='tv'&&!(m.delay>0))||(m.type==='sister'&&m.mode==='chase')||(m.type==='mother'&&m.state==='hunt'&&Math.hypot(m.x-S.x,m.z-S.z)<9)));A.chase(chasing);
   for(const id in DOORS){const d=DOORS[id];d.cur+=(d.target-d.cur)*Math.min(1,dt*4);d.pv.rotation.y=d.cur;}
@@ -1323,7 +1407,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
   if(S.world!=='fake'&&S.flash&&S.batt<20&&Math.random()<dt*.7)S.flick=.25+Math.random()*.5;if(S.flick>0)S.flick-=dt;
   const bv=S.world==='fake'?100:S.batt;$('battTxt').textContent=Math.round(bv)+'%';$('battFill').style.width=bv+'%';$('batt').classList.toggle('low',bv<20);
   S.hurtT+=dt;if(S.hurtT>8&&S.hp<100)S.hp=Math.min(100,S.hp+dt*2);$('hpFill').style.width=S.hp+'%';$('hpTxt').textContent=Math.round(S.hp);$('hpM').classList.toggle('low',S.hp<35);
-  $('knM').hidden=!has('knife');$('knFill').style.width=(S.knife/3*100)+'%';$('knTxt').textContent=S.knife+'×';
+  $('safeL').hidden=!safeNow();$('knM').hidden=!has('knife');$('knFill').style.width=(S.knife/3*100)+'%';$('knTxt').textContent=S.knife+'×';
   postU.dmg.value=Math.max(S.hp<35?.35:0,postU.dmg.value-dt*1.4);
   const tiredV=S.tired?.85:Math.pow(1-S.stam/100,2)*.6;postU.tired.value+=(tiredV-postU.tired.value)*Math.min(1,dt*2);
   if(A.ctx){const br=(S.tired?.34:0)+(1-S.stam/100)*.16+(A.chasing?.08:0),rate=2+(1-S.stam/100)*2.5;A.breath.gain.setTargetAtTime(br*(.25+.75*Math.max(0,Math.sin(S.time*rate))),A.ctx.currentTime,.05);}
@@ -1349,6 +1433,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
  camera.updateMatrixWorld();const tp=new T.Vector3(.18,-.2,-.3).applyMatrix4(camera.matrixWorld);flash.position.lerp(tp,.5);const fw2=new T.Vector3();camera.getWorldDirection(fw2);
  flash.target.position.lerp(camera.position.clone().add(fw2.multiplyScalar(6)),.35);flash.target.updateMatrixWorld();
  flash.intensity=flashI();if(isRealW(S.world)&&S.power)tvLight.intensity=.45+Math.random()*.25;
+ if(S.roomFlick&&S.poolRooms){const f=Math.random()<.5?.05:2.0;S.poolRooms.forEach((r,i)=>{if(r===S.roomFlick.k)PL[i].intensity=f;});LIT[S.roomFlick.k].fix.forEach(j=>lampFix[j].emissiveIntensity=f>.5?.95:0);}
  if(tvU.mode.value>1.5&&S.feed){const F_=S.feed;if(!F_.live){tvCam.position.set(...F_.pos);tvCam.lookAt(...F_.look);}
   applyWorld(F_.world,true);if(F_.live)flash.intensity=flashI();tvScreen.visible=false;renderer.setRenderTarget(tvRT);renderer.render(scene,tvCam);tvScreen.visible=true;applyWorld(S.world);flash.intensity=flashI();}
  for(const k in MON){const m=MON[k];m.mesh.visible=m.active&&m.visibleIn(S.world)&&m.zone===S.zone&&!m.gone&&!(k==='sister'&&m.mode!=='chase'&&!m.present)&&!(k==='tv'&&m.delay>0)&&!(k==='host'&&m.cool>0);}
@@ -1369,8 +1454,10 @@ function beginGame(day,fromSave){$('menu').hidden=true;$('howto').hidden=true;$(
  try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){}startDay(day,fromSave);}
 let save=null;try{save=JSON.parse(localStorage.getItem('k13')||'null');}catch(e){}
 if(save&&save.day>1){$('contGame').hidden=false;$('contGame').textContent='↻ POKRAČOVAŤ · DEŇ '+save.day;}
-$('newGame').onclick=()=>{A.init();if(A.ctx&&A.ctx.resume)A.ctx.resume();try{localStorage.removeItem('k13');}catch(e){}F={};S.batt=90;S.knife=0;SNAP=null;$('menu').hidden=true;$('howto').hidden=false;};
-$('howGo').onclick=()=>{$('howto').hidden=true;$('story').hidden=false;storyI=0;storyShow();startFn=()=>beginGame(1,false);};
+$('newGame').onclick=()=>{A.init();if(A.ctx&&A.ctx.resume)A.ctx.resume();try{localStorage.removeItem('k13');}catch(e){}F={};S.batt=90;S.knife=0;SNAP=null;$('menu').hidden=true;$('howto').hidden=false;showHP(0);};
+const HP=[...document.querySelectorAll('.hpage')];let hp=0;function showHP(i){hp=i;HP.forEach((s,k)=>s.hidden=k!==i);$('pgNum').textContent=String(i+1).padStart(2,'0')+' / '+String(HP.length).padStart(2,'0');
+ [...$('dots').children].forEach((d,k)=>d.classList.toggle('on',k===i));$('hPrev').disabled=i===0;$('hNext').innerHTML=i===HP.length-1?'ZAČAŤ<span>▶</span>':'ĎALEJ<span>▶</span>';A.click();}
+$('hPrev').onclick=()=>showHP(Math.max(0,hp-1));$('hNext').onclick=()=>{if(hp<HP.length-1)return showHP(hp+1);$('howto').hidden=true;$('story').hidden=false;storyI=0;storyShow();startFn=()=>beginGame(1,false);};
 $('contGame').onclick=()=>{A.init();if(A.ctx&&A.ctx.resume)A.ctx.resume();SNAP=save;F=JSON.parse(JSON.stringify(save.F));S.batt=save.batt;S.knife=save.knife;beginGame(save.day,true);};
 $('retry').onclick=()=>{$('death').hidden=true;postU.fade.value=0;if(!isTouch)lockPointer();retry();};
 $('again').onclick=()=>location.reload();
