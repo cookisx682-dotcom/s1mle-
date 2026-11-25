@@ -9,7 +9,6 @@
 </head>
 <body>
 <title>Kazeta 13</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Permanent+Marker&family=VT323&family=Special+Elite&display=swap">
 <style>
 /* Layout: full-bleed WebGL canvas; HUD pinned to safe-area-padded edges; menus are full-screen overlays built around a VHS cassette */
@@ -965,8 +964,7 @@ function faceFlash(ms){const c=$('face'),g=c.getContext('2d');g.fillStyle='#000'
 
 /* ---------- microphone (hiding) ---------- */
 const MIC={mode:'off',d:null,an:null,buf:null,heardT:0,level:0};
-(async()=>{try{if(window.claude&&typeof window.claude.use==='function'){const d=await window.claude.use('dictation');if(d){MIC.d=d;
- d.onPartial(e=>{if(e&&e.text&&S.hidden)micHeard(.9);});d.onFinal(e=>{if(e&&e.text&&e.text.trim()&&S.hidden)micHeard(1);});}}}catch(e){}})();
+
 function micEnable(){const st=$('micState');
  if(MIC.d){MIC.d.start().then(()=>{MIC.mode='dict';st.textContent='Mikrofón je zapnutý. Počúva iba vtedy, keď sa skrývaš.';setTimeout(()=>{MIC.d.stop().catch(()=>{});},500);}).catch(e=>{st.textContent=e&&e.code==='not_granted'?'Mikrofón nie je povolený. Hra pôjde aj bez neho.':'Mikrofón sa nepodarilo zapnúť. Hra pôjde aj bez neho.';});return;}
  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{A.init();const src=A.ctx.createMediaStreamSource(s);MIC.an=A.ctx.createAnalyser();MIC.an.fftSize=512;MIC.buf=new Float32Array(512);src.connect(MIC.an);MIC.mode='raw';st.textContent='Mikrofón je zapnutý. Počúva iba vtedy, keď sa skrývaš.';})
@@ -1231,8 +1229,8 @@ function openSettings(){const ov=$('settings');ov.hidden=false;S.uiSet=true;try{
  vb.onclick=()=>{SET.voices=!SET.voices;saveSet();vb.textContent=SET.voices?'ZAPNUTÉ':'VYPNUTÉ';vb.classList.toggle('on',SET.voices);if(SET.voices)speakLine('MAMA','Zlatko? Si to ty?');};}
 function closeSettings(){$('settings').hidden=true;S.uiSet=false;}
 $('setClose').onclick=closeSettings;
-/* voices: Claude voice in claude.ai, browser speech elsewhere */
-const TTS={t:null};(async()=>{try{if(window.claude&&typeof window.claude.use==='function'){TTS.t=await window.claude.use('tts');}}catch(e){}})();
+/* voices: browser speech */
+const TTS={t:null};
 const VOICES={MAMA:['airy',.92,1.15],OTEC:['rounded',.88,.75],LUCIA:['glassy',1.05,1.6],'DIEŤA':['glassy',1,1.5],'HLÁSATEĽ':['buttery',1.25,.9],'???':['rounded',.72,.55],RODINA:['airy',.85,1.1]};
 function speakLine(who,txt){if(!SET.voices)return;let v=VOICES[who];if(!v&&!who&&/^…/.test(txt))v=['airy',.75,.8];if(!v)return;const clean=txt.replace(/[…♪]/g,' ').trim();if(!clean)return;
  if(TTS.t){TTS.t.speak(clean,{voice:v[0],rate:v[1],language:'sk'}).catch(()=>{});return;}
