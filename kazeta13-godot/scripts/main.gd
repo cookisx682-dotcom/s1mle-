@@ -756,7 +756,7 @@ func _build_player() -> void:
 	dust.local_coords = false
 	head.add_child(dust)
 	a_breath = AudioStreamPlayer.new()
-	a_breath.stream = sfx.whisper
+	a_breath.stream = sfx.breath
 	a_breath.volume_db = -80
 	add_child(a_breath)
 
@@ -831,7 +831,7 @@ func _move_player(dt: float) -> void:
 	S.step_acc += moved
 	if S.step_acc > (0.85 if run else 0.7):
 		S.step_acc = 0.0
-		play("step", -4.0 if run else -9.0, randf_range(0.85, 1.15))
+		play("step%d" % (randi() % 5), -13.0 if run else -18.0, randf_range(0.92, 1.06) * (1.08 if run else 1.0))
 
 
 # =====================================================================
@@ -1003,7 +1003,7 @@ func _update_angel(dt: float) -> void:
 			ang_s.idx += 1
 			ang_s.away = 0.0
 			angel.position = P[ang_s.idx]
-			play("step", -2.0, 0.6)
+			play("step", -8.0, 0.6)
 
 
 # =====================================================================
@@ -1244,7 +1244,10 @@ func _retry() -> void:
 # Audio
 # =====================================================================
 func _build_audio() -> void:
-	sfx.step = Synth.step()
+	sfx.step = Synth.step(0)
+	for i in 5:
+		sfx["step%d" % i] = Synth.step(i + 1)
+	sfx.breath = Synth.breath()
 	sfx.heart = Synth.heart()
 	sfx.click = Synth.click()
 	sfx.creak = Synth.creak()
@@ -1358,7 +1361,7 @@ func _build_ui() -> void:
 	osd.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud.add_child(osd)
 	_label(osd, "PLAY ▶", _ls(f_osd, 40), Vector4(0.7, 0.03, 0.97, 0.1), HORIZONTAL_ALIGNMENT_RIGHT)
-	_label(osd, "PM 7:42\nOKT. 14 1998", _ls(f_osd, 40), Vector4(0.02, 0.8, 0.5, 0.97), HORIZONTAL_ALIGNMENT_LEFT)
+	_label(osd, "PM 7:42\nOKT. 14 1998", _ls(f_osd, 40), Vector4(0.5, 0.8, 0.975, 0.97), HORIZONTAL_ALIGNMENT_RIGHT)
 	ui.osd = osd
 	hud.visible = false
 	# overlays
@@ -1946,10 +1949,9 @@ func _draw_hud(c: Control) -> void:
 				c.draw_line(bp + Vector2(3 + x, 5), bp + Vector2(3 + x - 3, bh - 5), Color(0, 0, 0, 0.18), 2.0, true)
 				x += 20.0
 		var txt: String = rows[i][2]
-		var ts := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_RIGHT, -1, 20)
-		var tp := bp + Vector2(bw - 16 - ts.x, bh - 4)
+		var tp := bp + Vector2(bw + 10, bh - 4)
 		c.draw_string(font, tp + Vector2(1, 1), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0, 0, 0, 0.6))
-		c.draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.08, 0.08, 0.09) if fw > bw - 60 else white)
+		c.draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, accent)
 
 
 func _panel(parent: Node, col: Color) -> ColorRect:
@@ -2135,7 +2137,9 @@ func _process(dt: float) -> void:
 	post.set_shader_parameter("dmg", S.dmg)
 	var tired_v: float = 0.85 if S.tired else pow(1.0 - S.stam / 100.0, 2.0) * 0.6
 	post.set_shader_parameter("tired", tired_v)
-	a_breath.volume_db = linear_to_db(maxf(0.001, (0.5 if S.tired else 0.0) + (1.0 - S.stam / 100.0) * 0.25))
+	var exert: float = 1.0 if S.tired else clampf((70.0 - S.stam) / 60.0, 0.0, 1.0)
+	a_breath.volume_db = lerpf(a_breath.volume_db, linear_to_db(maxf(0.0005, exert * 0.22)), minf(1.0, dt * 2.0))
+	a_breath.pitch_scale = lerpf(a_breath.pitch_scale, 1.0 + exert * 0.45, minf(1.0, dt * 2.0))
 	if not a_breath.playing:
 		a_breath.play()
 	if S.hp < hud_hp - 0.5:

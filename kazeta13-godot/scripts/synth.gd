@@ -27,14 +27,59 @@ static func _env(i: int, n: int, a: float, d: float) -> float:
 		return t / a
 	return exp(-(t - a) / maxf(d, 0.001)) * clampf((total - t) / 0.02, 0.0, 1.0)
 
-static func step() -> AudioStreamWAV:
-	var n := int(RATE * 0.18)
+## Soft footstep on old wooden floor: heel + toe thump, low-passed, slight board creak.
+static func step(variant := 0) -> AudioStreamWAV:
+	seed(1000 + variant)
+	var n := int(RATE * 0.22)
 	var b := PackedFloat32Array(); b.resize(n)
-	var lp := 0.0
+	var lp1 := 0.0
+	var lp2 := 0.0
+	var toe := int(RATE * randf_range(0.045, 0.07))
+	var body_f := randf_range(85.0, 115.0)
+	var creak_f := randf_range(380.0, 620.0)
+	var creak_a := randf_range(0.0, 0.05)
 	for i in n:
-		lp += (randf_range(-1, 1) - lp) * 0.08
-		b[i] = (lp * 2.2 + sin(i * TAU * 70.0 / RATE) * 0.25) * _env(i, n, 0.004, 0.045)
+		var t := float(i) / RATE
+		var e := 0.0
+		if t < 0.003:
+			e = t / 0.003
+		else:
+			e = exp(-(t - 0.003) / 0.035)
+		if i >= toe:
+			var tt := float(i - toe) / RATE
+			e += 0.55 * (minf(1.0, tt / 0.003)) * exp(-tt / 0.03)
+		var x := randf_range(-1, 1)
+		lp1 += (x - lp1) * 0.09
+		lp2 += (lp1 - lp2) * 0.09
+		var thump := sin(t * TAU * body_f) * exp(-t / 0.05) * 0.6
+		var creak := sin(t * TAU * (creak_f + sin(t * 40.0) * 20.0)) * creak_a * exp(-t / 0.08)
+		b[i] = (lp2 * 3.2 + thump) * e * 0.55 + creak
 	return _wav(b)
+
+## Breathing loop: inhale (higher, airy) and exhale (lower, longer), band-passed noise.
+static func breath() -> AudioStreamWAV:
+	seed(77)
+	var n := int(RATE * 2.6)
+	var b := PackedFloat32Array(); b.resize(n)
+	var lo1 := 0.0
+	var lo2 := 0.0
+	var hi := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var env := 0.0
+		var bright := 0.0
+		if t < 0.95:
+			env = sin(t / 0.95 * PI) * 0.8
+			bright = 0.55
+		elif t > 1.15 and t < 2.45:
+			env = pow(sin((t - 1.15) / 1.3 * PI), 0.8)
+			bright = 0.32
+		var x := randf_range(-1, 1)
+		lo1 += (x - lo1) * bright
+		lo2 += (lo1 - lo2) * bright
+		hi = lo1 - lo2
+		b[i] = hi * env * 0.9
+	return _wav(b, true)
 
 static func heart() -> AudioStreamWAV:
 	var n := int(RATE * 0.5)
