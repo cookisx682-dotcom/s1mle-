@@ -892,6 +892,20 @@ func open_settings() -> void:
 			upd.call()
 			M.apply_settings())
 		v.add_child(hs)
+	text_label(v, "Grafika", M.f_ui, 16)
+	var gr := HBoxContainer.new()
+	v.add_child(gr)
+	var gbs := []
+	for i in 3:
+		var ii := i
+		var b := btn(gr, ["Nízka", "Stredná", "Vysoká"][i], func():
+			SET.gfx = ii
+			M.apply_settings()
+			for k in 3:
+				gbs[k].modulate = Color(1, 0.6, 0.5) if k == ii else Color.WHITE, 18)
+		b.modulate = Color(1, 0.6, 0.5) if int(SET.get("gfx", 1)) == i else Color.WHITE
+		gbs.append(b)
+	text_label(v, "Ak sa hra seká, daj Nízka.", M.f_ui, 12, Color(0.55, 0.52, 0.48))
 	slider.call("Hlasitosť", "vol", 0.0, 1.0)
 	slider.call("Citlivosť myši", "sens", 0.3, 2.0)
 	slider.call("Jas", "bright", 0.6, 1.6)
@@ -927,6 +941,7 @@ func open_settings() -> void:
 			A.speak("MAMA", "Zlatko? Si to ty?"))
 	tg.call("Mikrofón pri schovávaní", "mic", "Počúva iba vtedy, keď sa skrývaš. Keď je hlučno, príšery ťa nájdu.")
 	tg.call("Celá obrazovka", "fullscreen", "")
+	tg.call("Zobraziť FPS", "fps", "")
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row)

@@ -211,7 +211,7 @@ def cloth_sheet(w, d, height, name, sofa_w):
     floor = box("floor", (6, 0.1, 6), (0, -0.05, 0), "black", 0)
     floor.modifiers.new("col", "COLLISION")
     bm = bmesh.new()
-    res = 0.045
+    res = 0.065
     bmesh.ops.create_grid(bm, x_segments=int(w / res), y_segments=int(d / res), size=0.5)
     bmesh.ops.scale(bm, vec=Vector((w, d, 1)), verts=bm.verts)
     sh = _obj(name, bm, "sheet", True)

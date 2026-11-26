@@ -119,7 +119,7 @@ def canopy(p, size, n=6):
     for i in range(n):
         q = (p[0] + random.uniform(-1, 1) * size, p[1] + random.uniform(-0.3, 0.6) * size, p[2] + random.uniform(-1, 1) * size)
         bm = bmesh.new()
-        bmesh.ops.create_icosphere(bm, subdivisions=3, radius=size * random.uniform(0.5, 0.8))
+        bmesh.ops.create_icosphere(bm, subdivisions=2, radius=size * random.uniform(0.5, 0.8))
         o = B._obj("leaves", bm, "leaves", True)
         o.location = G(*q)
         o.scale = (1.0, 1.0, 0.7)
@@ -305,8 +305,8 @@ def scene():
     for (x, z, s) in [(0.25, 0.9, 0.7), (2.4, 0.4, 0.8), (2.9, -0.8, 1.0), (-0.3, -0.3, 0.6), (0.6, -1.3, 0.8),
                       (3.0, 2.1, 0.9), (1.9, -2.4, 0.9), (-1.3, -0.6, 0.7), (4.0, -1.5, 1.0)]:
         fern(x, z, s)
-    grass(1.2, 0.3, 2.3, 9000)
-    grass(1.0, -2.5, 3.5, 5000)
+    grass(1.2, 0.3, 2.3, 4500)
+    grass(1.0, -2.5, 3.5, 1800)
 
 
 if __name__ == "__main__":

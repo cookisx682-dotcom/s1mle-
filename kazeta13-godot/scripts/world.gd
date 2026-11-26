@@ -57,10 +57,18 @@ func build() -> void:
 	_hospital()
 	_changes()
 	_people()
+	# mark everything that moves or toggles, then merge the rest
+	for n in [gS.get_parent(), pend, compart, cake_flames[0].get_parent(), hosp_hands[0].get_parent()] + frames + chg.values() + people.values():
+		n.set_meta("dynamic", true)
+	var merged := 0
+	for k in G:
+		merged += M.merge_static(G[k])
+	print("merged meshes: ", merged)
 	for i in 6:
 		var l := OmniLight3D.new()
 		l.light_energy = 0.0
-		l.shadow_enabled = i < 4
+		l.shadow_enabled = i < 1
+		l.shadow_bias = 0.08
 		l.light_volumetric_fog_energy = 0.7
 		add_child(l)
 		pool.append(l)
@@ -158,6 +166,7 @@ func make_door(id: String, x: float, z: float, axis: String, w: float, swing: fl
 	var off := Vector3(pw / 2, 1.05, 0) if axis == "x" else Vector3(0, 1.05, pw / 2)
 	var dm: Node3D = M.model("door", Vector3.ZERO, 0.0 if axis == "x" else -PI / 2, body)
 	dm.scale.x = pw / 0.94
+	M.merge_static(body)
 	var cs := CollisionShape3D.new()
 	var sh := BoxShape3D.new()
 	sh.size = size
@@ -248,7 +257,7 @@ func _lamps() -> void:
 	tv_light.position = Vector3(4.5, 0.95, 1.3)
 	tv_light.light_color = Color(0.62, 0.71, 1.0)
 	tv_light.omni_range = 6.0
-	tv_light.shadow_enabled = true
+	tv_light.shadow_enabled = false
 	G.house.add_child(tv_light)
 
 
@@ -306,7 +315,7 @@ func books(x: float, z0: float, z1: float, shelves: int, y0: float, step: float)
 		while z < z1:
 			var w := randf_range(0.03, 0.07)
 			var hh := randf_range(0.22, 0.36)
-			M.box(Vector3(0.26, hh, w), Vector3(x, y0 + s * step + hh / 2, z + w / 2), Tex.flat(Color.from_hsv(randf(), 0.35, randf_range(0.12, 0.28)), 0.8), false, G.house)
+			M.box(Vector3(0.26, hh, w), Vector3(x, y0 + s * step + hh / 2, z + w / 2), Tex.flat([Color(0.35, 0.1, 0.08), Color(0.12, 0.18, 0.25), Color(0.2, 0.22, 0.12), Color(0.3, 0.25, 0.18), Color(0.15, 0.12, 0.1), Color(0.4, 0.33, 0.22)][randi() % 6], 0.8), false, G.house)
 			z += w + 0.004
 
 
@@ -438,7 +447,7 @@ func _furniture() -> void:
 	for s in [-1, 1]:
 		_sphere(0.035, Vector3(s * 0.065, 0.37, 0), bm, bear)
 	for i in 5:
-		M.box(Vector3(0.1, 0.1, 0.1), Vector3(11 + randf() * 1.6, 0.05, 10 + randf() * 1.2), Tex.flat(Color.from_hsv(randf(), 0.6, 0.6), 0.6), false, G.mem)
+		M.box(Vector3(0.1, 0.1, 0.1), Vector3(11 + randf() * 1.6, 0.05, 10 + randf() * 1.2), Tex.flat([Color(0.67, 0.2, 0.2), Color(0.2, 0.6, 0.4), Color(0.2, 0.4, 0.67)][i % 3], 0.6), false, G.mem)
 	# ---- bath
 	M.model("bathtub", Vector3(17.5, 0, 12.55), 0.0, hs)
 	M.solid(Vector3(2.0, 0.6, 0.76), Vector3(17.5, 0.3, 12.55))
@@ -715,9 +724,14 @@ func _people() -> void:
 	people.lucia = M.model("lucia", Vector3.ZERO, 0.0, G.t1)
 	people.kid_sit = M.model("kid_sit", Vector3.ZERO, 0.0, G.t5)
 	people.kid_lie = M.model("kid_stand", Vector3.ZERO, 0.0, G.t7)
-	people.kidH = M.model("kid_stand", Vector3(HX + 2.5, 0.8, 2.95), 0.0, G.hosp)
+	people.kidH = M.model("kid_stand", Vector3(HX + 2.5, 0.93, 2.95), 0.0, G.hosp)
 	people.kidH.rotation.x = -PI / 2
 	people.mamaH = M.model("mama_hosp", Vector3(HX + 1.35, 0, 2.6), PI / 2, G.hosp)
+	for p in people.values():
+		var hd = p.find_child("head", true, false)
+		if hd:
+			hd.set_meta("dynamic", true)
+		M.merge_static(p)
 
 
 func place(n: Node3D, x: float, z: float, ry: float, parent: Node = null, y := 0.0) -> void:

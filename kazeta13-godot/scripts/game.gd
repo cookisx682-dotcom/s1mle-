@@ -162,6 +162,7 @@ func _build_player() -> void:
 	hand_light.omni_range = 0.6
 	hand_light.light_cull_mask = 4
 	torch.add_child(hand_light)
+	M.merge_static(torch)
 	for c in torch.find_children("*", "GeometryInstance3D", true, false):
 		c.layers = 4
 	knife_v = Node3D.new()
@@ -193,11 +194,21 @@ func _build_feed() -> void:
 	me_fig = M.model("m_double", Vector3.ZERO, 0.0, M)
 	host_feed = M.model("m_host", Vector3.ZERO, 0.0, M)
 	for n in [me_fig, host_feed]:
+		_merge_model(n)
 		for c in n.find_children("*", "GeometryInstance3D", true, false):
 			c.layers = 2
 		n.visible = false
 	angel = M.model("m_host", Vector3.ZERO, 0.0, M)
+	_merge_model(angel)
 	angel.visible = false
+
+
+func _merge_model(n: Node3D) -> void:
+	for k in ["head", "screen", "cleaver", "tv"]:
+		var c = n.find_child(k, true, false)
+		if c:
+			c.set_meta("dynamic", true)
+	M.merge_static(n)
 
 
 # =====================================================================
@@ -1707,6 +1718,7 @@ func _build_monsters() -> void:
 	for t in defs:
 		var d = defs[t]
 		var n: Node3D = M.model(d[0], Vector3.ZERO, 0.0, M)
+		_merge_model(n)
 		n.visible = false
 		var m := {"type": t, "node": n, "name": d[1], "dmg": d[2], "speed": d[3], "walk": d[4], "x": 0.0, "z": 0.0, "rot": 0.0, "active": false,
 			"state": "off", "mode": "", "path": null, "path_t": 0.0, "lit": 0.0, "stun": 0.0, "flee": 0.0, "cool": 0.0, "alert": 0.0, "lost": 0.0,
@@ -2356,6 +2368,11 @@ func _build_nav() -> void:
 					nav_door[i + j * NW] = d
 					s = 0
 			nav[i + j * NW] = s
+	_build_astar()
+
+
+var astar: AStarGrid2D
+var door_cells: Array = []
 
 
 func nav_solid(i: int) -> bool:
@@ -2363,6 +2380,23 @@ func nav_solid(i: int) -> bool:
 		return true
 	var d = nav_door[i]
 	return d != null and d.locked and not d.open
+
+
+func _build_astar() -> void:
+	astar = AStarGrid2D.new()
+	astar.region = Rect2i(0, 0, NW, NH)
+	astar.cell_size = Vector2(1, 1)
+	astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	astar.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	astar.update()
+	for j in NH:
+		for i in NW:
+			var k := i + j * NW
+			if nav[k] == 1:
+				astar.set_point_solid(Vector2i(i, j), true)
+			elif nav_door[k] != null:
+				door_cells.append([Vector2i(i, j), nav_door[k]])
 
 
 func cell_of(x: float, z: float) -> Vector2i:
@@ -2383,43 +2417,17 @@ func nearest_free(c: Vector2i) -> Vector2i:
 
 
 func bfs(sx: float, sz: float, tx: float, tz: float):
+	for dc in door_cells:
+		var d = dc[1]
+		astar.set_point_solid(dc[0], d.locked and not d.open)
 	var s := nearest_free(cell_of(sx, sz))
 	var t := nearest_free(cell_of(tx, tz))
-	var st := s.x + s.y * NW
-	var tg := t.x + t.y * NW
-	var prev := PackedInt32Array()
-	prev.resize(NW * NH)
-	prev.fill(-1)
-	var q := PackedInt32Array([st])
-	prev[st] = st
-	var h := 0
-	var dirs := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
-	while h < q.size():
-		var c := q[h]
-		h += 1
-		if c == tg:
-			break
-		var x := c % NW
-		var z := c / NW
-		for o in dirs:
-			var nx: int = x + o.x
-			var nz: int = z + o.y
-			if nx < 0 or nz < 0 or nx >= NW or nz >= NH:
-				continue
-			var ni := nx + nz * NW
-			if prev[ni] != -1 or nav_solid(ni):
-				continue
-			if o.x != 0 and o.y != 0 and (nav_solid(x + o.x + z * NW) or nav_solid(x + (z + o.y) * NW)):
-				continue
-			prev[ni] = c
-			q.append(ni)
-	if prev[tg] == -1:
+	var ids := astar.get_id_path(s, t)
+	if ids.is_empty():
 		return null
 	var p := []
-	var c2 := tg
-	while c2 != st:
-		p.push_front([(c2 % NW + 0.5) * NS, (c2 / NW + 0.5) * NS])
-		c2 = prev[c2]
+	for k in range(1, ids.size()):
+		p.append([(ids[k].x + 0.5) * NS, (ids[k].y + 0.5) * NS])
 	return p
 
 
@@ -3306,8 +3314,10 @@ func process(dt: float) -> void:
 		U.prompt(cur.lbl if cur else null, S.hidden != null)
 		U.update_hud(dt)
 	# host hum / tv static volume
-	MON.host.hum.playing = MON.host.node.visible and live()
-	MON.tv.hum.playing = MON.tv.node.visible and live()
+	for t in ["host", "tv"]:
+		var want: bool = MON[t].node.visible and live()
+		if MON[t].hum.playing != want:
+			MON[t].hum.playing = want
 	# camera
 	S.shake = maxf(0.0, S.shake - dt * 1.4)
 	var sh: float = S.shake * S.shake

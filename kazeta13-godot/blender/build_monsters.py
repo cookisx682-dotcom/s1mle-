@@ -669,9 +669,9 @@ def hair(name, center, r, count, length, mat, front_cover=0.0, spread=1.0, seed=
     random.seed(seed)
     cu = bpy.data.curves.new(name, "CURVE")
     cu.dimensions = "3D"
-    cu.bevel_depth = 0.0017
+    cu.bevel_depth = 0.0024
     cu.bevel_resolution = 0
-    cu.resolution_u = 3
+    cu.resolution_u = 2
     c = Vector(center)
     for k in range(count):
         # direction on the upper skull
@@ -1069,7 +1069,7 @@ def m_mother():
     band = sub(band, 1)
     # long black hair falling over the face
     hairm = plain("hair_black", (0.012, 0.011, 0.01), 0.45)
-    hr = hair("hair", hl + Vector((0, 0.005, 0.02)), 0.108 * s, 900, 0.75 * s, hairm, front_cover=0.55, spread=0.6, seed=5, wave=0.012)
+    hr = hair("hair", hl + Vector((0, 0.005, 0.02)), 0.108 * s, 380, 0.75 * s, hairm, front_cover=0.55, spread=0.6, seed=5, wave=0.012)
     for x in (o, gown, head, band):
         bake(x)
     export("m_mother")
@@ -1114,7 +1114,7 @@ def m_sister():
         sock = mesh_obj("socket", bm, [plain("void", (0.0, 0.0, 0.0), 1.0)])
         sock.location = hl + Vector((side * 0.034, -0.083, 0.008)) * S
         parent_keep(sock, head)
-    hr = hair("hair", hl + Vector((0, 0.01, 0.025)), 0.15 * s, 750, 0.32, plain("hair_brown", (0.12, 0.08, 0.05), 0.5),
+    hr = hair("hair", hl + Vector((0, 0.01, 0.025)), 0.15 * s, 320, 0.32, plain("hair_brown", (0.12, 0.08, 0.05), 0.5),
               front_cover=0.1, spread=0.15, seed=11, wave=0.006, top_only=0.05)
     for x in (o, dress, head):
         bake(x)

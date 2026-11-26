@@ -17,9 +17,10 @@ var world
 var game
 var uix
 var audio
-var SET := {"vol": 0.85, "sens": 1.0, "bright": 1.0, "diff": 1, "voices": false, "mic": false, "fullscreen": false, "name": ""}
+var SET := {"gfx": 1, "fps": false, "vol": 0.85, "sens": 1.0, "bright": 1.0, "diff": 1, "voices": false, "mic": false, "fullscreen": false, "name": ""}
 var save_data := {}
 var _models := {}
+var game_us := 0.0
 var lowpass: AudioEffectLowPassFilter
 
 
@@ -66,6 +67,7 @@ func _ready() -> void:
 	_build_menu_scene()
 	_build_title_layer()
 	_build_gallery()
+	envs = [env, menu_cam.environment, gal_cam.environment]
 	apply_settings()
 	game.tp(6.5, 6.8, 0.6)
 	_show_menu()
@@ -75,6 +77,8 @@ func _ready() -> void:
 		_autotest()
 	if "--autotest2" in OS.get_cmdline_user_args():
 		_autotest2()
+	if "--bench" in OS.get_cmdline_user_args():
+		_bench()
 
 
 func _build_post() -> void:
@@ -100,6 +104,14 @@ func _build_title_layer() -> void:
 # ---------------------------------------------------------------- settings & saves
 func load_settings() -> void:
 	var f := FileAccess.open("user://k13_settings.json", FileAccess.READ)
+	if not f:
+		# first start: pick graphics quality from the GPU
+		var gpu := RenderingServer.get_video_adapter_name().to_lower()
+		var weak := false
+		for w in ["intel", "llvmpipe", "vangogh", "custom gpu 0405", "radeon(tm) graphics", "vega", "mali", "adreno", "uhd", "iris"]:
+			if gpu.contains(w):
+				weak = true
+		SET.gfx = 0 if weak else 1
 	if f:
 		var d = JSON.parse_string(f.get_as_text())
 		if d is Dictionary:
@@ -118,7 +130,93 @@ func apply_settings() -> void:
 	post.set_shader_parameter("bright", float(SET.bright))
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if SET.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
 	audio.set_mic(bool(SET.mic))
+	apply_quality()
 	save_settings()
+
+
+var envs: Array = []
+
+
+## Graphics quality: 0 low, 1 medium, 2 high.
+func apply_quality() -> void:
+	var q := int(SET.get("gfx", 1))
+	var vp := get_viewport()
+	vp.msaa_3d = Viewport.MSAA_2X if q == 2 else Viewport.MSAA_DISABLED
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if q < 2 else Viewport.SCREEN_SPACE_AA_DISABLED
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if q == 0 else Viewport.SCALING_3D_MODE_BILINEAR
+	vp.scaling_3d_scale = 0.7 if q == 0 else 1.0
+	RenderingServer.environment_set_volumetric_fog_volume_size(48 if q == 0 else (64 if q == 1 else 96), 32 if q == 0 else (48 if q == 1 else 96))
+	RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_LOW if q < 2 else RenderingServer.ENV_SSAO_QUALITY_MEDIUM, true, 0.5, 2, 50, 300)
+	RenderingServer.directional_shadow_atlas_set_size(1024 if q == 0 else 2048, true)
+	vp.positional_shadow_atlas_size = 1024 if q == 0 else (2048 if q == 1 else 4096)
+	for e in envs:
+		e.ssao_enabled = q >= 1
+		e.ssil_enabled = q == 2
+		e.volumetric_fog_enabled = q >= 1
+		e.fog_enabled = q == 0
+		e.fog_density = 0.035
+		e.fog_light_color = Color(0.05, 0.05, 0.06)
+		e.glow_enabled = true
+	if world:
+		for i in world.pool.size():
+			world.pool[i].shadow_enabled = i < (0 if q == 0 else (1 if q == 1 else 3))
+	if game and game.flash:
+		game.flash.shadow_enabled = true
+
+
+## Merge all static meshes under root into one mesh per material: far fewer draw calls.
+func merge_static(root: Node3D) -> int:
+	var groups := {}
+	var mats := {}
+	var victims: Array = []
+	var inv := root.global_transform.affine_inverse()
+	var mask := Mesh.ARRAY_FORMAT_VERTEX | Mesh.ARRAY_FORMAT_NORMAL | Mesh.ARRAY_FORMAT_TANGENT | Mesh.ARRAY_FORMAT_COLOR | Mesh.ARRAY_FORMAT_TEX_UV | Mesh.ARRAY_FORMAT_TEX_UV2
+	for c in root.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = c
+		if mi.mesh == null or not mi.is_visible_in_tree():
+			continue
+		var skip := false
+		var p: Node = mi
+		while p != null and p != root:
+			if p is AnimatableBody3D or p.has_meta("dynamic"):
+				skip = true
+				break
+			p = p.get_parent()
+		if skip:
+			continue
+		var xf := inv * mi.global_transform
+		var am: bool = mi.mesh is ArrayMesh
+		var ok := true
+		if am:
+			for s in mi.mesh.get_surface_count():
+				if mi.mesh.surface_get_primitive_type(s) != Mesh.PRIMITIVE_TRIANGLES:
+					ok = false
+		if not ok:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var mat: Material = mi.get_active_material(s)
+			var fmt: int = (mi.mesh.surface_get_format(s) & mask) if am else -1
+			var ctr: Vector3 = xf * mi.get_aabb().get_center()
+			var key := "%d_%d_%d_%d_%d" % [mat.get_instance_id() if mat else 0, fmt, int(mi.cast_shadow), int(floorf(ctr.x / 9.0)), int(floorf(ctr.z / 8.0))]
+			if not groups.has(key):
+				groups[key] = [SurfaceTool.new(), 0]
+				mats[key] = [mat, mi.cast_shadow]
+			groups[key][0].append_from(mi.mesh, s, xf)
+		victims.append(mi)
+	for mi in victims:
+		mi.get_parent().remove_child(mi)
+		mi.queue_free()
+	for key in groups:
+		var st: SurfaceTool = groups[key][0]
+		var mesh := st.commit()
+		if mesh == null or mesh.get_surface_count() == 0:
+			continue
+		mesh.surface_set_material(0, mats[key][0])
+		var n := MeshInstance3D.new()
+		n.mesh = mesh
+		n.cast_shadow = mats[key][1]
+		root.add_child(n)
+	return victims.size()
 
 
 func set_lowpass(hz: float) -> void:
@@ -226,11 +324,27 @@ func _physics_process(dt: float) -> void:
 		game.physics(dt)
 
 
+var fps_label: Label
+
+
 func _process(dt: float) -> void:
+	if fps_label == null:
+		var cl := CanvasLayer.new()
+		cl.layer = 10
+		add_child(cl)
+		fps_label = Label.new()
+		fps_label.position = Vector2(8, 4)
+		fps_label.add_theme_color_override("font_color", Color(0.6, 1, 0.6))
+		cl.add_child(fps_label)
+	fps_label.visible = bool(SET.get("fps", false))
+	if fps_label.visible:
+		fps_label.text = "%d FPS" % Engine.get_frames_per_second()
 	if menu_on:
 		_menu_process(dt)
 		return
+	var t0 := Time.get_ticks_usec()
 	game.process(dt)
+	game_us = lerpf(game_us, float(Time.get_ticks_usec() - t0), 0.1)
 
 
 # ---------------------------------------------------------------- screenshots (testing)
@@ -313,6 +427,7 @@ func _build_env() -> void:
 	env.ssao_radius = 1.2
 	env.ssao_intensity = 2.5
 	env.ssil_enabled = true
+	env.fog_enabled = false
 	env.glow_enabled = true
 	env.glow_intensity = 0.7
 	env.glow_bloom = 0.08
@@ -331,7 +446,7 @@ func _build_env() -> void:
 	moon.light_color = Color(0.45, 0.55, 0.85)
 	moon.light_energy = 0.12
 	moon.rotation_degrees = Vector3(-35, -60, 0)
-	moon.shadow_enabled = true
+	moon.shadow_enabled = false
 	add_child(moon)
 
 
@@ -1076,3 +1191,50 @@ func _autotest2() -> void:
 	await get_tree().create_timer(7.0).timeout
 	_t("DONE2")
 	get_tree().quit()
+
+
+func _bench() -> void:
+	var G = game
+	_hide_menu()
+	G.S.running = true
+	G.S.invuln = 1e9
+	uix.hud_show(true)
+	G.set_world("real")
+	G.S.flash = true
+	G.S.lit = {"living": true}
+	G.apply_world("real")
+	var cnt := {}
+	for c in get_tree().root.find_children("*", "GeometryInstance3D", true, false):
+		if c.is_visible_in_tree():
+			var path := str(c.get_path())
+			var key := path.split("/").slice(0, 6)
+			var k := "/".join(key)
+			cnt[k] = cnt.get(k, 0) + 1
+	var mats := {}
+	for c in world.G.house.get_children():
+		if c is MeshInstance3D and c.mesh:
+			var mm = c.mesh.surface_get_material(0)
+			mats[mm] = mats.get(mm, 0) + 1
+	print("MERGED children in house: ", world.G.house.get_child_count(), " unique materials: ", mats.size())
+	G.start_day(7)
+	await get_tree().create_timer(4.0).timeout
+	G.S.invuln = 1e9
+	for q in [2, 1, 0]:
+		SET.gfx = q
+		apply_quality()
+		await _bench_spots()
+	get_tree().quit()
+
+
+func _bench_spots() -> void:
+	var G = game
+	for spot in [[6.8, 6.6, 0.7], [10.0, 7.5, -1.57], [21.0, 12.0, 0.0]]:
+		G.tp(spot[0], spot[1], spot[2])
+		for i in 30:
+			await get_tree().process_frame
+		var t0 := Time.get_ticks_usec()
+		for i in 30:
+			await get_tree().process_frame
+		var ms := (Time.get_ticks_usec() - t0) / 30000.0
+		G.S.flash = true
+		print("BENCH gfx=%d %s draw=%d prims=%d frame_ms=%.1f game_logic_ms=%.2f script_ms=%.2f physics_ms=%.2f" % [int(SET.gfx), str(spot), Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), ms, game_us / 1000.0, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0])
