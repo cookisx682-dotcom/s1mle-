@@ -87,6 +87,8 @@ body.touch #osd .tr{top:calc(env(safe-area-inset-top,0px) + 60px)}
 .repc{width:min(420px,88vw);height:auto;border-radius:8px;box-shadow:0 20px 50px #000}.repbar{width:min(420px,88vw);height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}.repbar i{display:block;height:100%;width:0;background:#ff4a3a}
 .egg{position:fixed;inset:0;z-index:100;background:#000;display:grid;place-items:center;align-content:center;gap:10px;animation:eggshake .12s infinite}
 .egg canvas{height:min(78vh,640px);width:auto;filter:contrast(1.8) brightness(1.2);mix-blend-mode:screen}.egg p{margin:0;font:400 clamp(26px,5vw,44px)/1.1 var(--f-osd);letter-spacing:.1em;color:#ff4a3a;text-align:center;text-shadow:0 0 18px rgba(255,0,0,.6);padding:0 16px}
+.egg.porty canvas{animation:pzoom 6.6s ease-in forwards}.egg.red{background:#3a0000}.egg.red canvas{filter:contrast(2.2) brightness(1.4) sepia(1) hue-rotate(-40deg) saturate(4)}
+@keyframes pzoom{from{transform:scale(.6)}to{transform:scale(1.5)}}
 @keyframes eggshake{25%{transform:translate(4px,-3px)}50%{transform:translate(-5px,2px)}75%{transform:translate(3px,4px)}}
 @media (prefers-reduced-motion:reduce){.egg{animation:none}}
 #safeL{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#ffd678;text-shadow:0 0 10px rgba(255,200,100,.5)}
@@ -1444,7 +1446,12 @@ function playOutro(cb){const o=$('outro');$('outroName').textContent=NM()||'Kaze
 /* ---------- easter egg: choosing a name from the house ---------- */
 const EGG={host:'Hosť','hosť':'Hosť',lucia:'Lucia',lucka:'Lucia',mama:'Mama',matka:'Matka',otec:'Otec',masiar:'Mäsiar','mäsiar':'Mäsiar',sestra:'Sestra',dvojnik:'Dvojník','dvojník':'Dvojník',hlasatel:'Hlásateľ','hlásateľ':'Hlásateľ'};
 const eggName=()=>EGG[(NM()||'').toLowerCase()]||null;
-function nameEgg(next){const who=eggName();if(!who)return next();A.init();if(A.ctx&&A.ctx.resume)A.ctx.resume();
+function portyEgg(next){A.init();if(A.ctx&&A.ctx.resume)A.ctx.resume();const ov=el('div','egg porty');const c=document.createElement('canvas');c.width=320;c.height=400;c.getContext('2d').drawImage(faceCv,0,0);ov.appendChild(c);
+ const p=el('p',null,'PORTY.');ov.appendChild(p);document.body.appendChild(ov);A.stinger();setTimeout(()=>{A.shriek(-.6);A.shriek(.6);},200);
+ const steps=[[1300,'Vedeli sme, že prídeš.'],[2600,'Celý dom ťa volá po mene.'],[3900,'PORTY. PORTY. PORTY.'],[5200,'Kazeta 13 je tvoja.']];
+ steps.forEach(([t,txt],i)=>setTimeout(()=>{p.textContent=txt;speakLine('???',txt);if(i===2){A.stinger();ov.classList.add('red');}else A.moan((i%2?1:-1)*.5,1);},t));
+ setTimeout(()=>{ov.remove();next();},6600);}
+function nameEgg(next){if((NM()||'').toLowerCase()==='porty')return portyEgg(next);const who=eggName();if(!who)return next();A.init();if(A.ctx&&A.ctx.resume)A.ctx.resume();
  const ov=el('div','egg');const c=document.createElement('canvas');c.width=320;c.height=400;c.getContext('2d').drawImage(faceCv,0,0);ov.appendChild(c);const p=el('p',null,`${NM()}? To meno už niekto má.`);ov.appendChild(p);document.body.appendChild(ov);
  A.stinger();setTimeout(()=>A.shriek(0),250);
  setTimeout(()=>{p.textContent=who==='Hosť'?'Ja som Hosť. A odteraz aj ty.':`${who} ťa už čaká v dome.`;speakLine('???',p.textContent);A.moan(0,1);},1400);
