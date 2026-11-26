@@ -1,13 +1,18 @@
-# Kazeta 13 – Godot demo (deň 1)
+# Kazeta 13 – Godot
 
-3D verzia hry Kazeta 13 v Godote 4.3.
+Celá hra Kazeta 13 v 3D (Godot 4.3): 7 dní, 6 príšer, kazety, hádanky, 3 konce.
 
 - `blender/build_models.py` – všetky modely (nábytok, dvere, postavy, ruka s baterkou, plachty cez cloth simuláciu)
 - `blender/build_menu.py` – scéna hlavného menu (les, televízor GOOD LUCK)
 - `blender/build_monsters.py` – 6 príšer (Hosť, Mäsiar, Matka, Sestra, Dvojník, Hlásateľ) so zapečenými textúrami
 - `blender/preview.py` – náhľad modelu v Cycles
 - `models/` – vyexportované `.glb`
-- `scripts/main.gd` – hra, `scripts/tex.gd` – textúry, `scripts/synth.gd` – zvuky
+- `scripts/main.gd` – menu, galéria, nastavenia, ukladanie
+- `scripts/world.gd` – dom, pivnica, nemocnica, svety kaziet
+- `scripts/game.gd` – hráč, dni, kazety, príšery, strašenie, konce
+- `scripts/ui.gd` – HUD, taška, denník, mapa, hádanky, návod, titulky
+- `scripts/audio.gd`, `scripts/synth.gd` – zvuky, `scripts/tex.gd` – textúry
+- `art/make_art.py` – obrazy, fotky, kresby
 
 Modely znova vygeneruješ:
 

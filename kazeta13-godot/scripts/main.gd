@@ -1,69 +1,26 @@
 extends Node3D
-## Kazeta 13 - Godot demo (day 1). Builds the house procedurally and runs the game.
+## Kazeta 13 - main scene: builds modules, title menu, gallery, settings and saves.
 
-const H := 2.8
-const TW := 0.16
-const NS := 0.5
-const NW := 48
-const NH := 30
-
-# ---------- scene parts ----------
 var house: Node3D
-var real_g: Node3D
-var mem_g: Node3D
+var rects: Array = []
 var env: Environment
 var moon: DirectionalLight3D
-var player: CharacterBody3D
-var head: Node3D
-var cam: Camera3D
-var flash: SpotLight3D
-var torch: Node3D
-var hand_light: OmniLight3D
-const TORCH_REST := Vector3(0.17, -0.2, -0.33)
-var torch_sway := Vector2.ZERO
-var tv_light: OmniLight3D
-var room_lights := {}
-var lamp_mats := {}
-var mem_lights: Array = []
 var post: ShaderMaterial
-var host: Node3D
-var angel: Node3D
-var family: Array = []
-var doors := {}
-var rects: Array = []      # nav obstacles (Rect2 in xz)
-var nav := PackedByteArray()
-var inter: Array = []
-var items := {}
-
-# ---------- audio ----------
-var sfx := {}
-var a_drone: AudioStreamPlayer
-var a_music: AudioStreamPlayer
-var a_breath: AudioStreamPlayer
-var a_tv: AudioStreamPlayer3D
-var a_host: AudioStreamPlayer3D
-
-# ---------- ui ----------
 var ui := {}
 var f_osd: Font
 var f_type: Font
 var f_mark: Font
 var f_ui: Font
-
-# ---------- state ----------
-var S := {
-	"running": false, "paused": false, "busy": false, "dead": false, "world": "real",
-	"yaw": -PI / 2, "pitch": 0.0, "flash": false, "batt": 90.0, "stam": 100.0, "tired": false,
-	"hp": 100.0, "hurt_t": 9.0, "bob": 0.0, "step_acc": 0.0, "shake": 0.0, "flick": 0.0,
-	"inserted": false, "can_enter": false, "can_exit": false, "lit": {}, "flags": {}, "time": 0.0,
-}
-var cur = null
-var sens := 1.0
-var sub_q: Array = []
-var sub_t := 0.0
-var msg_t := 0.0
-var host_s := {"active": false, "cool": 0.0, "lit": 0.0, "warned": false, "path": [], "path_t": 0.0, "far_t": 0.0, "walk": 0.0}
-var ang_s := {"on": false, "idx": 0, "away": 0.0}
+var f_title: Font
+var f_title_ui: Font
+var world
+var game
+var uix
+var audio
+var SET := {"vol": 0.85, "sens": 1.0, "bright": 1.0, "diff": 1, "voices": false, "mic": false, "fullscreen": false, "name": ""}
+var save_data := {}
+var _models := {}
+var lowpass: AudioEffectLowPassFilter
 
 
 func _ready() -> void:
@@ -72,25 +29,211 @@ func _ready() -> void:
 	f_type = load("res://fonts/SpecialElite-Regular.ttf")
 	f_mark = load("res://fonts/PermanentMarker-Regular.ttf")
 	f_ui = load("res://fonts/Inter.ttf")
-	_build_audio()
+	f_title = load("res://fonts/Creepster-Regular.ttf")
+	f_title_ui = load("res://fonts/Anton-Regular.ttf")
+	load_settings()
+	load_game()
+	lowpass = AudioEffectLowPassFilter.new()
+	lowpass.cutoff_hz = 20000
+	AudioServer.add_bus_effect(0, lowpass)
+	audio = load("res://scripts/audio.gd").new()
+	audio.M = self
+	add_child(audio)
+	audio.build()
 	_build_env()
-	house = Node3D.new(); add_child(house)
-	real_g = Node3D.new(); add_child(real_g)
-	mem_g = Node3D.new(); add_child(mem_g)
-	_build_house()
-	_build_furniture()
-	_build_people()
-	_build_player()
-	_build_nav()
-	_build_ui()
+	house = Node3D.new()
+	add_child(house)
+	world = load("res://scripts/world.gd").new()
+	world.M = self
+	add_child(world)
+	house = world
+	world.build()
+	house = world.G.house
+	game = load("res://scripts/game.gd").new()
+	game.M = self
+	game.W = world
+	game.A = audio
+	add_child(game)
+	uix = load("res://scripts/ui.gd").new()
+	uix.M = self
+	uix.A = audio
+	add_child(uix)
+	game.U = uix
+	uix.G = game
+	_build_post()
+	game.build()
+	uix.build()
 	_build_menu_scene()
+	_build_title_layer()
 	_build_gallery()
-	_set_world("real")
-	_show_title()
+	apply_settings()
+	game.tp(6.5, 6.8, 0.6)
+	_show_menu()
 	if "--shots" in OS.get_cmdline_user_args():
 		_shots()
+	if "--autotest" in OS.get_cmdline_user_args():
+		_autotest()
+	if "--autotest2" in OS.get_cmdline_user_args():
+		_autotest2()
 
 
+func _build_post() -> void:
+	var pl := CanvasLayer.new()
+	pl.layer = 1
+	add_child(pl)
+	var pr := ColorRect.new()
+	pr.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	post = ShaderMaterial.new()
+	post.shader = load("res://shaders/vhs.gdshader")
+	pr.material = post
+	pl.add_child(pr)
+
+
+func _build_title_layer() -> void:
+	var top := CanvasLayer.new()
+	top.layer = 3
+	add_child(top)
+	_build_title(top)
+
+
+# ---------------------------------------------------------------- settings & saves
+func load_settings() -> void:
+	var f := FileAccess.open("user://k13_settings.json", FileAccess.READ)
+	if f:
+		var d = JSON.parse_string(f.get_as_text())
+		if d is Dictionary:
+			for k in d:
+				SET[k] = d[k]
+
+
+func save_settings() -> void:
+	var f := FileAccess.open("user://k13_settings.json", FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(SET))
+
+
+func apply_settings() -> void:
+	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(0.001, float(SET.vol))))
+	post.set_shader_parameter("bright", float(SET.bright))
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if SET.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
+	audio.set_mic(bool(SET.mic))
+	save_settings()
+
+
+func set_lowpass(hz: float) -> void:
+	lowpass.cutoff_hz = hz
+
+
+func load_game() -> void:
+	var f := FileAccess.open("user://k13_save.json", FileAccess.READ)
+	if f:
+		var d = JSON.parse_string(f.get_as_text())
+		if d is Dictionary:
+			save_data = d
+
+
+func save_game() -> void:
+	save_data = {"snap": game.SNAP, "cp": game.CP}
+	var f := FileAccess.open("user://k13_save.json", FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(save_data))
+
+
+# ---------------------------------------------------------------- menu flow
+var menu_root: Node3D
+var menu_cam: Camera3D
+var menu_moon: DirectionalLight3D
+var menu_tv_light: OmniLight3D
+var menu_screen_mat: ShaderMaterial
+var menu_static: AudioStreamPlayer
+var menu_on := false
+var menu_glitch := 0.0
+const MENU_AT := Vector3(200, 0, 200)
+const GAL_AT := Vector3(-200, 0, -200)
+const MONSTERS := [
+	["m_host", "HOSŤ", "Hýbe sa, len keď sa nepozeráš.\nNikdy naň nesvieť baterkou."],
+	["m_butcher", "MÄSIAR", "Vidí aj počuje. Keď ťa zbadá, beží.\nUtekaj do rozsvietenej izby."],
+	["m_mother", "MATKA", "Je slepá. Loví podľa zvuku.\nKeď je blízko, nedýchaj."],
+	["m_sister", "SESTRA", "Nepozeraj sa jej do očí.\nČím dlhšie hľadíš, tým viac to bolí."],
+	["m_double", "DVOJNÍK", "Vyzerá ako ty a opakuje tvoje kroky.\nKeď sa na seba pozriete, rozbehne sa."],
+	["m_announcer", "HLÁSATEĽ", "Objaví sa iba v páskach.\nKeď začne vysielať, nepočúvaj."],
+]
+var gal_root: Node3D
+var gal_cam: Camera3D
+var gal_models: Array = []
+var gal_idx := 0
+var gal_on := false
+var gal_spin := 0.0
+
+
+func _show_menu() -> void:
+	menu_on = true
+	menu_root.visible = true
+	menu_moon.visible = true
+	moon.visible = false
+	menu_cam.make_current()
+	ui.title.visible = true
+	ui.menu.visible = true
+	uix.hud_show(false)
+	post.set_shader_parameter("vhs", 0.0)
+	post.set_shader_parameter("anom", 0.0)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	audio.set_loop("drone", 0.25, 1.0)
+	menu_static.play()
+
+
+func _hide_menu() -> void:
+	menu_on = false
+	menu_root.visible = false
+	menu_moon.visible = false
+	moon.visible = true
+	game.cam.make_current()
+	ui.title.visible = false
+	menu_static.stop()
+
+
+func _new_game() -> void:
+	_hide_menu()
+	game.new_game()
+	post.set_shader_parameter("fade", 0.0)
+	uix.show_howto(func(): game.begin_game(1, false))
+
+
+func _continue_game() -> void:
+	_hide_menu()
+	var snap = save_data.get("snap")
+	game.SNAP = snap
+	game.F = snap.F.duplicate(true)
+	game.S.batt = float(snap.batt)
+	game.S.knife = int(snap.knife)
+	var cp = save_data.get("cp")
+	if cp != null and int(cp.day) == int(snap.day):
+		game.CP = cp
+	game.begin_game(int(snap.day), true)
+
+
+func _unhandled_input(e: InputEvent) -> void:
+	if menu_on:
+		if e is InputEventKey and e.pressed and e.physical_keycode == KEY_ESCAPE and gal_on:
+			_gallery_show(false)
+		return
+	game.handle_input(e)
+
+
+func _physics_process(dt: float) -> void:
+	if not menu_on:
+		game.physics(dt)
+
+
+func _process(dt: float) -> void:
+	if menu_on:
+		_menu_process(dt)
+		return
+	game.process(dt)
+
+
+# ---------------------------------------------------------------- screenshots (testing)
 func _snap(name: String) -> void:
 	for i in 40:
 		await get_tree().process_frame
@@ -101,54 +244,61 @@ func _snap(name: String) -> void:
 
 func _shots() -> void:
 	await _snap("0-menu")
-	_gallery_show(true)
-	for i in MONSTERS.size():
-		_gal_set(i)
-		gal_spin = 0.15
-		await _snap("g%d-%s" % [i, MONSTERS[i][0]])
-	_gallery_show(false)
 	_hide_menu()
-	ui.hud.visible = true
-	S.running = true
-	S.lit = {"living": true}
-	_set_world("real")
-	spawn(Vector3(6.8, 0, 6.6), deg_to_rad(40))
-	S.pitch = -0.15
+	var G = game
+	G.S.running = true
+	G.S.lethal = false
+	G.S.invuln = 1e9
+	uix.hud_show(true)
+	G.S.day = 3
+	G.set_world("real")
+	G.S.lit = {"living": true}
+	G.apply_world("real")
+	G.tp(6.8, 6.6, deg_to_rad(40), -0.15)
 	await _snap("1-obyvacka")
-	S.lit = {}
-	_set_world("real")
-	S.flash = true
-	spawn(Vector3(10.0, 0, 7.5), deg_to_rad(-90))
-	S.pitch = 0.0
-	host.position = Vector3(19.5, 0, 7.5)
-	host.visible = true
-	S.running = false
-	torch.visible = true
+	G.S.lit = {}
+	G.apply_world("real")
+	G.S.flash = false
+	G.set_mon("butcher", {"x": 18.0, "z": 7.5, "state": "patrol", "worlds": ["real"], "rot": -PI / 2})
+	G.tp(10.0, 7.5, deg_to_rad(-90))
 	await _snap("2-chodba")
-	S.running = true
-	host.visible = false
-	spawn(Vector3(11.0, 0, 5.4), deg_to_rad(150))
-	S.flash = true
-	S.pitch = -0.25
-	await _snap("3-kuchyna")
-	S.flash = false
-	_set_world("t1")
-	angel.visible = false
-	spawn(Vector3(14.6, 0, 5.2), deg_to_rad(35))
-	S.pitch = -0.2
-	await _snap("4-kazeta")
-	_set_world("real")
-	S.flash = true
-	spawn(Vector3(14.0, 0, 13.8), deg_to_rad(60))
-	S.pitch = -0.2
-	set_door("kid", true)
-	await _snap("5-detska")
+	G.mons_off()
+	G.tp(43.0, 2.0, deg_to_rad(200), -0.1)
+	G.S.zone = "base"
+	G.set_mon("butcher", {"x": 48.2, "z": 8.8, "state": "idle", "idle_t": 1e9, "worlds": ["real"], "rot": PI / 2})
+	G.apply_world("real")
+	await _snap("3-pivnica")
+	G.mons_off()
+	G.S.zone = "house"
+	G.apply_world("real")
+	G.tp(4.5, 2.6, 0.0, -0.12)
+	G.F.got_tape1 = true
+	await G.insert_tape("1")
+	await _snap("3b-tv")
+	G.S.inserted = null
+	G.start_tape("2")
+	G.S.angel_on = true
+	G.tp(14.6, 5.2, deg_to_rad(35), -0.2)
+	await _snap("4-kazeta2")
+	G.start_tape("3")
+	G.tp(12.0, 7.5, deg_to_rad(-90))
+	G.MON.tv.delay = 0.0
+	G.MON.tv.x = 17.0
+	G.MON.tv.z = 7.5
+	await _snap("5-anomalia")
+	G.mons_off()
+	G.start_tape("13")
+	await _snap("6-nemocnica")
+	G.set_world("real")
+	G.tp(14.0, 13.8, deg_to_rad(60), -0.2)
+	G.S.flash = true
+	await _snap("7-detska")
+	G.U.open_map()
+	await _snap("8-mapa")
+	G.U.close_panel()
+	G.U.open_bag()
+	await _snap("9-taska")
 	get_tree().quit()
-
-
-# =====================================================================
-# Environment & lights
-# =====================================================================
 func _build_env() -> void:
 	var we := WorldEnvironment.new()
 	env = Environment.new()
@@ -185,35 +335,6 @@ func _build_env() -> void:
 	add_child(moon)
 
 
-func _set_world(w: String) -> void:
-	S.world = w
-	var mem := w == "t1"
-	real_g.visible = not mem
-	mem_g.visible = mem
-	for l in mem_lights:
-		l.visible = mem
-	for k in lamp_mats:
-		lamp_mats[k].emission_energy_multiplier = 3.0 if (mem or S.lit.get(k, false)) else 0.0
-	for k in room_lights:
-		room_lights[k].visible = (not mem) and S.lit.get(k, false)
-	tv_light.visible = not mem
-	moon.light_energy = 0.0 if mem else 0.12
-	env.ambient_light_color = Color(1.0, 0.85, 0.65) if mem else Color(0.45, 0.5, 0.65)
-	env.ambient_light_energy = 0.35 if mem else 0.06
-	env.volumetric_fog_albedo = Color(1.0, 0.85, 0.65) if mem else Color(0.75, 0.75, 0.78)
-	env.volumetric_fog_density = 0.02 if mem else 0.035
-	post.set_shader_parameter("vhs", 1.0 if mem else 0.0)
-	ui.osd.visible = mem
-	if mem:
-		a_music.play()
-	else:
-		a_music.stop()
-	angel.visible = ang_s.on and mem
-
-
-# =====================================================================
-# Geometry helpers
-# =====================================================================
 func box(size: Vector3, pos: Vector3, m: Material, collide := true, parent: Node = null, rot_y := 0.0) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	if m:
@@ -239,7 +360,6 @@ func box(size: Vector3, pos: Vector3, m: Material, collide := true, parent: Node
 	return mi
 
 
-var _models := {}
 func model(name: String, pos: Vector3, ry := 0.0, parent: Node = null) -> Node3D:
 	if not _models.has(name):
 		_models[name] = load("res://models/%s.glb" % name)
@@ -312,981 +432,10 @@ func scrawl(text: String, pos: Vector3, rot_y: float, size := 64, parent: Node =
 	l.shaded = true
 	l.double_sided = false
 	l.pixel_size = 0.004
-	(parent if parent else real_g).add_child(l)
+	(parent if parent else world.G.real).add_child(l)
 	return l
 
 
-# =====================================================================
-# House
-# =====================================================================
-func add_wall(cx: float, cz: float, sx: float, sz: float) -> void:
-	box(Vector3(sx, H, sz), Vector3(cx, H / 2, cz), Tex.mat("wall"))
-	var hz := sx > sz
-	box(Vector3(sx + (0.0 if hz else 0.03), 1.0, sz + (0.03 if hz else 0.0)), Vector3(cx, 0.5, cz), Tex.mat("wainscot"), false)
-	box(Vector3(sx + (0.0 if hz else 0.05), 0.05, sz + (0.05 if hz else 0.0)), Vector3(cx, 1.0, cz), Tex.mat("wood_dark"), false)
-	box(Vector3(sx + (0.0 if hz else 0.07), 0.09, sz + (0.07 if hz else 0.0)), Vector3(cx, H - 0.045, cz), Tex.flat(Color(0.6, 0.57, 0.5), 0.8), false)
-
-
-func wall_seg(x0: float, z0: float, x1: float, z1: float, gaps := []) -> void:
-	var hz := z0 == z1
-	var a0 := x0 if hz else z0
-	var a1 := x1 if hz else z1
-	var cur_a := a0
-	var cur_end := true
-	var gs: Array = gaps.duplicate()
-	gs.sort_custom(func(a, b): return a[0] < b[0])
-	var seg := func(p0: float, p1: float, e0: bool, e1: bool) -> void:
-		p0 -= TW / 2 if e0 else 0.0
-		p1 += TW / 2 if e1 else 0.0
-		if p1 - p0 < 0.02:
-			return
-		var L := p1 - p0
-		var m := (p0 + p1) / 2
-		if hz:
-			add_wall(m, z0, L, TW)
-		else:
-			add_wall(x0, m, TW, L)
-	for g in gs:
-		var c: float = g[0]
-		var w: float = g[1]
-		seg.call(cur_a, c - w / 2, cur_end, false)
-		box(Vector3(w if hz else TW, H - 2.15, TW if hz else w), Vector3(c if hz else x0, (H + 2.15) / 2, z0 if hz else c), Tex.mat("wall"), false)
-		for s in [-1, 1]:
-			box(Vector3(0.07 if hz else TW + 0.05, 2.15, TW + 0.05 if hz else 0.07), Vector3(c + s * w / 2 if hz else x0, 1.075, z0 if hz else c + s * w / 2), Tex.mat("wood_dark"), false)
-		box(Vector3(w + 0.14 if hz else TW + 0.05, 0.08, TW + 0.05 if hz else w + 0.14), Vector3(c if hz else x0, 2.17, z0 if hz else c), Tex.mat("wood_dark"), false)
-		cur_a = c + w / 2
-		cur_end = false
-	seg.call(cur_a, a1, cur_end, true)
-
-
-func floor_room(x0: float, z0: float, x1: float, z1: float, key: String) -> void:
-	box(Vector3(x1 - x0, 0.1, z1 - z0), Vector3((x0 + x1) / 2, -0.05, (z0 + z1) / 2), Tex.mat(key), false)
-
-
-func make_door(id: String, x: float, z: float, axis: String, w: float, locked := false) -> void:
-	var pv := Node3D.new()
-	pv.position = Vector3(x - w / 2, 0, z) if axis == "x" else Vector3(x, 0, z - w / 2)
-	house.add_child(pv)
-	var pw := w - 0.04
-	var body := AnimatableBody3D.new()
-	body.sync_to_physics = false
-	pv.add_child(body)
-	var size := Vector3(pw, 2.1, 0.05) if axis == "x" else Vector3(0.05, 2.1, pw)
-	var off := Vector3(pw / 2, 1.05, 0) if axis == "x" else Vector3(0, 1.05, pw / 2)
-	var dm := model("door", Vector3.ZERO, 0.0 if axis == "x" else -PI / 2, body)
-	dm.scale.x = pw / 0.94
-	var cs := CollisionShape3D.new(); var sh := BoxShape3D.new(); sh.size = size; cs.shape = sh; cs.position = off
-	body.add_child(cs)
-	doors[id] = {"pv": pv, "open": false, "locked": locked, "ang": (-1.45 if axis == "x" else 1.45), "cur": 0.0, "x": x, "z": z, "axis": axis, "w": w}
-
-
-func set_door(id: String, open: bool, locked = null) -> void:
-	var d = doors[id]
-	d.open = open
-	if locked != null:
-		d.locked = locked
-
-
-func lamp_fixture(key: String, pos: Vector3) -> void:
-	var m := Tex.emissive(Color(1.0, 0.8, 0.55), 0.0)
-	lamp_mats[key + str(lamp_mats.size())] = m
-	var shade := cyl(0.13, 0.28, 0.22, pos, m)
-	shade.material_override = m
-	cyl(0.006, 0.006, H - pos.y, Vector3(pos.x, (H + pos.y) / 2, pos.z), Tex.mat("black"))
-
-
-func _build_house() -> void:
-	wall_seg(0, 0, 24, 0)
-	wall_seg(0, 15, 24, 15, [[6.5, 1.0]])
-	wall_seg(0, 0, 0, 15, [[11.5, 1.0]])
-	wall_seg(24, 0, 24, 15)
-	wall_seg(0, 8, 9, 8, [[4.5, 1.6]])
-	wall_seg(9, 0, 9, 15, [[3, 1.0], [7.5, 1.2]])
-	wall_seg(16, 0, 16, 6, [[3, 1.0]])
-	wall_seg(9, 6, 24, 6, [[12.5, 1.0]])
-	wall_seg(9, 9, 24, 9, [[12, 1.0], [17, 1.0], [21.5, 1.0]])
-	wall_seg(15, 9, 15, 15)
-	wall_seg(19, 9, 19, 15, [[14, 0.9]])
-	wall_seg(15, 13, 19, 13)
-	floor_room(0, 0, 9, 8, "floor"); floor_room(0, 8, 9, 15, "floor"); floor_room(9, 0, 16, 6, "tile")
-	floor_room(16, 0, 24, 6, "floor"); floor_room(9, 6, 24, 9, "floor"); floor_room(9, 9, 15, 15, "carpet")
-	floor_room(15, 9, 19, 13, "tile2"); floor_room(15, 13, 19, 15, "concrete"); floor_room(19, 9, 24, 15, "carpet2")
-	var ceil := box(Vector3(24, 0.1, 15), Vector3(12, H + 0.05, 7.5), Tex.mat("ceiling"), false)
-	ceil.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	# outer slab so light never leaks
-	box(Vector3(26, 0.2, 17), Vector3(12, -0.2, 7.5), Tex.mat("black"), true)
-	make_door("lk", 9, 3, "z", 0.98)
-	make_door("kh", 12.5, 6, "x", 0.98)
-	make_door("kid", 12, 9, "x", 0.98, true)
-	make_door("bath", 17, 9, "x", 0.98)
-	make_door("bed", 21.5, 9, "x", 0.98, true)
-	make_door("study", 16, 3, "z", 0.98, true)
-	make_door("stor", 19, 14, "z", 0.88)
-	make_door("front", 0, 11.5, "z", 0.98, true)
-	make_door("base", 6.5, 15, "x", 0.98, true)
-	set_door("kh", true)
-	# windows
-	for wdef in [[Vector3(0.09, 1.6, 5.8), PI / 2], [Vector3(11.5, 1.6, 0.09), 0.0], [Vector3(20, 1.6, 0.09), 0.0], [Vector3(12, 1.6, 14.91), PI], [Vector3(23.91, 1.6, 10.3), -PI / 2]]:
-		_window(wdef[0], wdef[1])
-	# lamps and their lights (switchable rooms)
-	var rooms := {"living": Vector3(4.5, 2.3, 3.8), "kitchen": Vector3(12.5, 2.3, 3.4), "kid": Vector3(12, 2.3, 12)}
-	for k in rooms:
-		var p: Vector3 = rooms[k]
-		var m := Tex.emissive(Color(1.0, 0.8, 0.55), 0.0)
-		lamp_mats[k] = m
-		var shade := model("shade", p + Vector3(0, 0.05, 0))
-		set_mat(shade, "lampshade", m)
-		no_shadow(shade)
-		cyl(0.006, 0.006, H - p.y, Vector3(p.x, (H + p.y) / 2 + 0.05, p.z), Tex.mat("black"))
-		var l := OmniLight3D.new()
-		l.position = p - Vector3(0, 0.2, 0)
-		l.light_color = Color(1.0, 0.78, 0.55)
-		l.light_energy = 2.2
-		l.omni_range = 9.0
-		l.shadow_enabled = true
-		l.light_volumetric_fog_energy = 0.6
-		house.add_child(l)
-		room_lights[k] = l
-	# memory-world lights (everything lit, warm)
-	for p in [Vector3(4.5, 2.2, 3.8), Vector3(12.5, 2.2, 3.4), Vector3(14, 2.2, 7.5), Vector3(4.5, 2.2, 11.5), Vector3(20, 2.2, 7.5)]:
-		var l := OmniLight3D.new()
-		l.position = p
-		l.light_color = Color(1.0, 0.75, 0.5)
-		l.light_energy = 1.8
-		l.omni_range = 9.0
-		l.shadow_enabled = p.x < 13
-		house.add_child(l)
-		mem_lights.append(l)
-	# switches
-	_switch("living", Vector3(5.7, 1.3, 7.9), PI)
-	_switch("kitchen", Vector3(9.1, 1.3, 2.1), PI / 2)
-	_switch("kid", Vector3(11.15, 1.3, 9.1), 0.0)
-	# blood writing
-	scrawl("VRÁŤ SA", Vector3(16.2, 1.6, 6.09), 0.0, 96)
-	scrawl("ON JE TU", Vector3(13.8, 1.55, 9.09), 0.0, 80)
-	scrawl("NESVIEŤ", Vector3(0.09, 1.55, 3.6), PI / 2, 80)
-
-
-func _window(pos: Vector3, ry: float) -> void:
-	var g := Node3D.new()
-	g.position = pos
-	g.rotation.y = ry
-	house.add_child(g)
-	var glass := Tex.emissive(Color(0.12, 0.16, 0.3), 0.6)
-	quad(Vector2(1.1, 1.25), Vector3.ZERO, Vector3.ZERO, glass, g)
-	for d in [[Vector3(1.22, 0.06, 0.06), Vector3(0, 0.64, 0.02)], [Vector3(1.22, 0.06, 0.06), Vector3(0, -0.64, 0.02)], [Vector3(0.06, 1.3, 0.06), Vector3(-0.58, 0, 0.02)], [Vector3(0.06, 1.3, 0.06), Vector3(0.58, 0, 0.02)], [Vector3(1.1, 0.035, 0.04), Vector3(0, 0, 0.02)], [Vector3(0.035, 1.25, 0.04), Vector3(0, 0, 0.02)]]:
-		box(d[0], d[1], Tex.mat("wood"), false, g)
-	for s in [-1, 1]:
-		box(Vector3(0.42, 2.1, 0.05), Vector3(s * 0.85, -0.25, 0.1), Tex.flat(Color(0.25, 0.06, 0.06), 0.98), false, g)
-	for i in 3:
-		var b := box(Vector3(1.5, 0.12, 0.03), Vector3(0, -0.4 + i * 0.4, 0.12), Tex.mat("wood_dark"), false, g)
-		b.rotation.z = (i - 1) * 0.08
-		b.reparent(real_g)
-
-
-func _switch(key: String, pos: Vector3, ry: float) -> void:
-	var g := Node3D.new()
-	g.position = pos
-	g.rotation.y = ry
-	house.add_child(g)
-	box(Vector3(0.09, 0.13, 0.015), Vector3.ZERO, Tex.mat("cream"), false, g)
-	box(Vector3(0.022, 0.04, 0.02), Vector3(0, 0, 0.012), Tex.flat(Color(0.6, 0.58, 0.52), 0.5), false, g)
-	add_inter(pos, 2.0, func(): return S.world == "real",
-		func(): return "Zhasnúť svetlo" if S.lit.get(key, false) else "Rozsvietiť",
-		func():
-			S.lit[key] = not S.lit.get(key, false)
-			play("click")
-			_set_world(S.world))
-
-
-# =====================================================================
-# Furniture
-# =====================================================================
-func chair(x: float, z: float, ry: float, parent: Node = null) -> Node3D:
-	return model("chair", Vector3(x, 0, z), ry, parent)
-
-
-var tv_screen: MeshInstance3D
-func _build_furniture() -> void:
-	# --- living: TV (Blender model)
-	var tv := model("tv", Vector3(4.5, 0, 0.62))
-	rects.append(Rect2(3.75, 0.34, 1.5, 0.56))
-	var sm := ShaderMaterial.new()
-	var sh := Shader.new()
-	sh.code = "shader_type spatial;render_mode unshaded;uniform float on=1.0;float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}void fragment(){vec2 c=UV-.5;float n=h(floor(UV*vec2(170.,128.))+floor(TIME*30.)*1.7);vec3 col=vec3(n)*.8+.05;col*=.82+.18*sin(UV.y*520.);col*=smoothstep(.78,.3,length(c));ALBEDO=col*on;}"
-	sm.shader = sh
-	tv_screen = tv.find_child("screen", true, false)
-	tv_screen.material_override = sm
-	tv_light = OmniLight3D.new()
-	tv_light.position = Vector3(4.5, 0.95, 1.4)
-	tv_light.light_color = Color(0.62, 0.71, 1.0)
-	tv_light.light_energy = 0.9
-	tv_light.omni_range = 5.5
-	tv_light.shadow_enabled = true
-	house.add_child(tv_light)
-	add_inter(Vector3(4.5, 0.85, 0.95), 2.4, func(): return true, _tv_label, _tv_use)
-	# coffee table, rug
-	box(Vector3(1.2, 0.05, 0.66), Vector3(4.5, 0.42, 3.2), Tex.mat("wood"), true)
-	for a in [-1, 1]:
-		for b in [-1, 1]:
-			box(Vector3(0.05, 0.4, 0.05), Vector3(4.5 + a * 0.54, 0.2, 3.2 + b * 0.28), Tex.mat("wood"), false)
-	box(Vector3(3, 0.01, 3.6), Vector3(4.5, 0.006, 3.8), Tex.mat("rug"), false)
-	# sofa + armchair, covered with sheets in reality (cloth-simulated in Blender)
-	model("sofa", Vector3(4.5, 0, 5.0), 0.0, mem_g)
-	solid(Vector3(2.2, 0.9, 0.86), Vector3(4.5, 0.45, 5.0))
-	model("sofa_sheet", Vector3(4.5, 0, 5.0), 0.0, real_g)
-	model("armchair", Vector3(1.4, 0, 3.4), -PI / 2, mem_g)
-	solid(Vector3(0.9, 0.9, 0.9), Vector3(1.4, 0.45, 3.4))
-	model("armchair_sheet", Vector3(1.4, 0, 3.4), -PI / 2, real_g)
-	model("shelf", Vector3(0.24, 0, 1.4), PI / 2)
-	solid(Vector3(0.42, 2.0, 1.3), Vector3(0.3, 1.0, 1.4))
-	model("clock", Vector3(8.45, 0, 0.45))
-	solid(Vector3(0.56, 2.1, 0.42), Vector3(8.45, 1.05, 0.45))
-	model("floor_lamp", Vector3(7.7, 0, 1.6))
-	var fl := Tex.emissive(Color(1.0, 0.8, 0.55), 0.0)
-	lamp_mats["living_floor"] = fl
-	var fs := model("shade", Vector3(7.7, 1.5, 1.6))
-	set_mat(fs, "lampshade", fl)
-	no_shadow(fs)
-	model("dresser", Vector3(2.2, 0, 7.72), PI)
-	solid(Vector3(1.4, 0.9, 0.5), Vector3(2.2, 0.45, 7.72))
-	# --- kitchen
-	model("counter", Vector3(11.6, 0, 0.42))
-	solid(Vector3(4.8, 0.9, 0.6), Vector3(11.6, 0.45, 0.42))
-	model("stove", Vector3(14.6, 0, 0.42))
-	solid(Vector3(0.76, 0.9, 0.62), Vector3(14.6, 0.45, 0.42))
-	model("fridge", Vector3(15.5, 0, 0.5))
-	solid(Vector3(0.72, 1.8, 0.66), Vector3(15.5, 0.9, 0.5))
-	model("table", Vector3(12.5, 0, 3.6))
-	solid(Vector3(1.6, 0.78, 0.9), Vector3(12.5, 0.39, 3.6))
-	chair(12.5, 2.98, 0.0); chair(11.5, 3.6, PI / 2); chair(13.5, 3.6, -PI / 2, mem_g); chair(12.5, 4.25, PI, mem_g)
-	var fallen := chair(14.2, 4.9, 0.8, real_g)
-	fallen.rotation = Vector3(PI / 2.1, 0.6, 0)
-	fallen.position.y = 0.22
-	# --- hall
-	box(Vector3(0.9, 0.05, 0.34), Vector3(14.5, 0.78, 6.3), Tex.mat("wood"), true)
-	for a in [-1, 1]:
-		box(Vector3(0.04, 0.76, 0.04), Vector3(14.5 + a * 0.4, 0.38, 6.3), Tex.mat("wood"), false)
-	model("wardrobe", Vector3(23.6, 0, 7.5), -PI / 2)
-	solid(Vector3(0.7, 2.0, 1.1), Vector3(23.6, 1.0, 7.5))
-	box(Vector3(13, 0.01, 1.1), Vector3(16.5, 0.006, 7.5), Tex.mat("rug"), false)
-	box(Vector3(0.56, 0.45, 0.03), Vector3(10.6, 1.6, 6.1), Tex.mat("wood_dark"), false)
-	box(Vector3(0.5, 0.39, 0.005), Vector3(10.6, 1.6, 6.12), Tex.flat(Color(0.45, 0.38, 0.27), 0.6), false)
-	# --- kid room
-	model("bed_kid", Vector3(9.72, 0, 12.5))
-	solid(Vector3(1.06, 0.5, 2.06), Vector3(9.72, 0.25, 12.5))
-	model("wardrobe", Vector3(14.6, 0, 10.1), -PI / 2)
-	solid(Vector3(0.7, 2.0, 1.1), Vector3(14.6, 1.0, 10.1))
-	box(Vector3(0.9, 0.04, 0.5), Vector3(13.4, 0.62, 14.6), Tex.flat(Color(0.48, 0.35, 0.24), 0.6), true)
-	box(Vector3(0.8, 0.5, 0.45), Vector3(10.6, 0.25, 14.55), Tex.flat(Color(0.42, 0.29, 0.16), 0.7), true)
-	# --- bath, bedroom, foyer
-	model("bathtub", Vector3(17.5, 0, 12.55))
-	solid(Vector3(2.0, 0.6, 0.76), Vector3(17.5, 0.3, 12.55))
-	model("sink", Vector3(18.72, 0, 10.2), -PI / 2)
-	solid(Vector3(0.44, 0.9, 0.5), Vector3(18.72, 0.45, 10.2))
-	var mirror := StandardMaterial3D.new(); mirror.albedo_color = Color(0.05, 0.06, 0.07); mirror.metallic = 1.0; mirror.roughness = 0.02
-	quad(Vector2(0.5, 0.7), Vector3(18.92, 1.55, 10.2), Vector3(0, -PI / 2, 0), mirror)
-	model("bed_double", Vector3(22.75, 0, 12.9), -PI / 2)
-	solid(Vector3(2.2, 0.5, 1.8), Vector3(22.75, 0.25, 12.9))
-	model("wardrobe", Vector3(19.4, 0, 10.6), PI / 2)
-	solid(Vector3(0.7, 2.0, 1.1), Vector3(19.4, 1.0, 10.6))
-	model("dresser", Vector3(21.2, 0, 14.7), PI)
-	solid(Vector3(1.4, 0.9, 0.5), Vector3(21.2, 0.45, 14.7))
-	for i in 8:
-		box(Vector3(0.32, 0.22 * (i + 1), 1.4), Vector3(3.0 - i * 0.32, 0.11 * (i + 1), 14.2), Tex.mat("wood"), i == 0)
-	rects.append(Rect2(0.45, 13.45, 2.75, 1.5))
-	model("dresser", Vector3(6.2, 0, 8.33))
-	solid(Vector3(1.4, 0.9, 0.5), Vector3(6.2, 0.45, 8.33))
-	# tapes and pickups
-	items["tape1"] = _tape("1", "VEČERA", Vector3(4.35, 0.457, 3.15), real_g)
-	add_inter(Vector3(4.35, 0.46, 3.15), 2.0, func(): return S.world == "real" and items["tape1"].visible, func(): return "Vziať kazetu 1 · VEČERA",
-		func():
-			items["tape1"].visible = false
-			S.flags.tape1 = true
-			play("click"))
-	items["tape2"] = _tape("2", "NARODENINY", Vector3(9.85, 0.53, 12.3), real_g)
-	add_inter(Vector3(9.85, 0.53, 12.3), 2.0, func(): return S.world == "real" and items["tape2"].visible, func(): return "Vziať kazetu 2 · NARODENINY",
-		func():
-			items["tape2"].visible = false
-			S.flags.tape2 = true
-			play("click"))
-	for bp in [Vector3(12.0, 0.957, 0.35), Vector3(14.5, 0.82, 6.3)]:
-		var bat := box(Vector3(0.06, 0.035, 0.08), bp, Tex.flat(Color(0.75, 0.38, 0.1), 0.4), false, real_g)
-		add_inter(bp, 2.0, func(): return S.world == "real" and bat.visible, func(): return "Vziať batérie",
-			func():
-				bat.visible = false
-				S.batt = minf(100.0, S.batt + 40.0)
-				play("click"))
-	# doors as interactables
-	for id in ["lk", "kh", "kid", "bath", "bed", "study", "stor", "front"]:
-		var d = doors[id]
-		add_inter(Vector3(d.x, 1.0, d.z), 1.9, func(): return true, func(): return _door_label(id), func(): _door_use(id))
-	# memory world: dinner and the key
-	for p in [Vector3(12.5, 0.785, 3.25), Vector3(12.0, 0.785, 3.6), Vector3(13.0, 0.785, 3.6), Vector3(12.5, 0.785, 3.95)]:
-		cyl(0.13, 0.1, 0.02, p, Tex.mat("ceramic"), mem_g)
-	var key := box(Vector3(0.06, 0.008, 0.02), Vector3(10.2, 0.93, 0.4), Tex.mat("brass"), false, mem_g)
-	items["key"] = key
-	add_inter(Vector3(10.2, 0.93, 0.4), 2.0, func(): return S.world == "t1" and key.visible, func(): return "Vziať kľúč od detskej izby",
-		func():
-			key.visible = false
-			S.flags.key = true
-			play("click")
-			objective("Vráť sa k televízoru.")
-			S.can_exit = true
-			say("MAMA", "Ešte jeden tanier. Pre hosťa.", 2.8))
-
-
-func _tape(big: String, small: String, pos: Vector3, parent: Node) -> Node3D:
-	var g := Node3D.new()
-	g.position = pos
-	parent.add_child(g)
-	box(Vector3(0.19, 0.026, 0.105), Vector3.ZERO, Tex.flat(Color(0.06, 0.06, 0.06), 0.4), false, g)
-	box(Vector3(0.16, 0.002, 0.06), Vector3(0, 0.014, 0), Tex.flat(Color(0.9, 0.86, 0.77), 0.85), false, g)
-	var l := Label3D.new()
-	l.text = big + "  " + small
-	l.font = f_mark
-	l.font_size = 22
-	l.pixel_size = 0.0012
-	l.modulate = Color(0.1, 0.08, 0.06)
-	l.rotation.x = -PI / 2
-	l.position = Vector3(0, 0.0156, 0)
-	l.shaded = true
-	g.add_child(l)
-	return g
-
-
-# =====================================================================
-# People
-# =====================================================================
-
-
-var host_head: Node3D
-var lucia_head: Node3D
-func _build_people() -> void:
-	var mama := model("mama", Vector3(12.5, 0, 2.86), 0.0, mem_g)
-	var otec := model("otec", Vector3(11.4, 0, 3.6), PI / 2, mem_g)
-	var lucia := model("lucia", Vector3(13.6, 0, 3.6), -PI / 2, mem_g)
-	family = [mama, otec, lucia]
-	lucia_head = lucia.find_child("head", true, false)
-	host = model("m_host", Vector3.ZERO, 0.0, self)
-	host_head = host.find_child("head", true, false)
-	host.visible = false
-	angel = model("m_host", Vector3.ZERO, 0.0, self)
-	angel.visible = false
-	a_host = AudioStreamPlayer3D.new()
-	a_host.stream = sfx.drone
-	a_host.volume_db = -6
-	a_host.unit_size = 3.0
-	host.add_child(a_host)
-
-
-# =====================================================================
-# Player
-# =====================================================================
-func _build_player() -> void:
-	player = CharacterBody3D.new()
-	player.motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
-	var cs := CollisionShape3D.new()
-	var sh := CapsuleShape3D.new()
-	sh.radius = 0.25
-	sh.height = 1.6
-	cs.shape = sh
-	cs.position.y = 0.9
-	player.add_child(cs)
-	add_child(player)
-	head = Node3D.new()
-	head.position.y = 1.6
-	player.add_child(head)
-	cam = Camera3D.new()
-	cam.fov = 72
-	cam.near = 0.04
-	head.add_child(cam)
-	flash = SpotLight3D.new()
-	flash.light_color = Color(1.0, 0.94, 0.84)
-	flash.light_energy = 0.0
-	flash.spot_range = 18.0
-	flash.spot_angle = 26.0
-	flash.spot_angle_attenuation = 1.6
-	flash.shadow_enabled = true
-	flash.light_cull_mask = 1
-	flash.light_volumetric_fog_energy = 2.2
-	flash.position = Vector3(0.15, -0.15, -0.1)
-	cam.add_child(flash)
-	torch = Node3D.new()
-	torch.position = TORCH_REST
-	torch.rotation = Vector3(0.05, 0.1, 0)
-	torch.scale = Vector3.ONE * 1.25
-	cam.add_child(torch)
-	no_shadow(model("hand_flashlight", Vector3.ZERO, 0.0, torch))
-	# soft fill so the hand is readable in the dark
-	hand_light = OmniLight3D.new()
-	hand_light.position = Vector3(-0.08, 0.12, 0.05)
-	hand_light.light_color = Color(0.9, 0.85, 0.8)
-	hand_light.light_energy = 0.25
-	hand_light.omni_range = 0.6
-	hand_light.light_cull_mask = 1 << 1
-	torch.add_child(hand_light)
-	for c in torch.find_children("*", "GeometryInstance3D", true, false):
-		c.layers = 1 << 1
-	torch.visible = false
-	# dust in the flashlight beam
-	var dust := GPUParticles3D.new()
-	dust.amount = 220
-	dust.lifetime = 8.0
-	dust.preprocess = 8.0
-	dust.visibility_aabb = AABB(Vector3(-4, -2, -4), Vector3(8, 4, 8))
-	var pm := ParticleProcessMaterial.new()
-	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(3, 1.5, 3)
-	pm.gravity = Vector3(0, -0.01, 0)
-	pm.initial_velocity_min = 0.0
-	pm.initial_velocity_max = 0.05
-	pm.direction = Vector3(0, 1, 0)
-	pm.spread = 180.0
-	dust.process_material = pm
-	var qm := QuadMesh.new()
-	qm.size = Vector2(0.012, 0.012)
-	var dm := StandardMaterial3D.new()
-	dm.albedo_color = Color(0.9, 0.88, 0.8)
-	dm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	dm.albedo_color.a = 0.6
-	qm.material = dm
-	dust.draw_pass_1 = qm
-	dust.local_coords = false
-	head.add_child(dust)
-	a_breath = AudioStreamPlayer.new()
-	a_breath.stream = sfx.breath
-	a_breath.volume_db = -80
-	add_child(a_breath)
-
-
-func spawn(p: Vector3, yaw: float) -> void:
-	player.position = Vector3(p.x, 0, p.z)
-	S.yaw = yaw
-	S.pitch = 0.0
-
-
-func _unhandled_input(e: InputEvent) -> void:
-	if e is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and S.running and not S.busy:
-		S.yaw -= e.relative.x * 0.0022 * sens
-		torch_sway += e.relative * 0.00012
-		S.pitch = clampf(S.pitch - e.relative.y * 0.0022 * sens, -1.35, 1.35)
-	if e is InputEventKey and e.pressed and not e.echo:
-		if e.physical_keycode == KEY_ESCAPE and S.running and not S.dead:
-			_toggle_pause()
-		elif not S.running or S.paused:
-			return
-		elif e.physical_keycode == KEY_E:
-			_act()
-		elif e.physical_keycode == KEY_F:
-			_toggle_flash()
-	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and S.running and not S.paused:
-		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		else:
-			_act()
-
-
-func _toggle_flash() -> void:
-	if S.busy:
-		return
-	if not S.flash and S.batt <= 0.0:
-		say("", "Baterka je vybitá.", 2.0)
-		return
-	S.flash = not S.flash
-	play("click")
-
-
-func _move_player(dt: float) -> void:
-	var f := 0.0
-	var s := 0.0
-	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP): f += 1
-	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN): f -= 1
-	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT): s += 1
-	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT): s -= 1
-	var mag := Vector2(f, s).length()
-	if mag > 1.0:
-		f /= mag; s /= mag
-	var want_run := Input.is_physical_key_pressed(KEY_SHIFT) and mag > 0.1
-	if S.tired and S.stam > 45.0:
-		S.tired = false
-	var run: bool = want_run and not S.tired and S.stam > 0.0
-	if run:
-		S.stam -= dt * 19.0
-		if S.stam <= 0.0:
-			S.stam = 0.0
-			S.tired = true
-	else:
-		S.stam = minf(100.0, S.stam + dt * (11.0 if mag > 0.1 else 20.0))
-	var sp: float = (3.5 if run else (1.4 if S.tired else 1.9)) * minf(1.0, mag)
-	var fw := Vector3(-sin(S.yaw), 0, -cos(S.yaw))
-	var rt := Vector3(cos(S.yaw), 0, -sin(S.yaw))
-	player.velocity = (fw * f + rt * s) * sp
-	var before := player.position
-	player.move_and_slide()
-	player.position.y = 0
-	var moved := (player.position - before).length()
-	S.bob += moved * (3.2 if run else 3.6)
-	S.step_acc += moved
-	if S.step_acc > (0.85 if run else 0.7):
-		S.step_acc = 0.0
-		play("step%d" % (randi() % 5), -13.0 if run else -18.0, randf_range(0.92, 1.06) * (1.08 if run else 1.0))
-
-
-# =====================================================================
-# Interactions
-# =====================================================================
-func add_inter(pos: Vector3, r: float, cond: Callable, label: Callable, use: Callable) -> void:
-	inter.append({"pos": pos, "r": r, "cond": cond, "label": label, "use": use})
-
-
-func _pick() -> void:
-	cur = null
-	if S.busy:
-		return
-	var cp := cam.global_position
-	var fw := -cam.global_transform.basis.z
-	var best = null
-	var bs := 1e9
-	var space := get_world_3d().direct_space_state
-	for o in inter:
-		if not o.cond.call():
-			continue
-		var v: Vector3 = o.pos - cp
-		var d := v.length()
-		if d > o.r:
-			continue
-		var a := acos(clampf(v.normalized().dot(fw), -1.0, 1.0))
-		if a > atan(0.3 / maxf(0.3, d)) + 0.1:
-			continue
-		var q := PhysicsRayQueryParameters3D.create(cp, o.pos - v.normalized() * 0.15)
-		q.exclude = [player.get_rid()]
-		var hit := space.intersect_ray(q)
-		if not hit.is_empty():
-			continue
-		if a < bs:
-			bs = a
-			best = o
-	if best:
-		var lbl = best.label.call()
-		if lbl:
-			cur = {"o": best, "lbl": lbl}
-
-
-func _act() -> void:
-	if S.busy or S.dead or not cur:
-		return
-	cur.o.use.call()
-
-
-func _door_label(id: String) -> String:
-	var d = doors[id]
-	if d.locked:
-		if id == "kid" and S.flags.get("key", false) and S.world == "real":
-			return "Odomknúť kľúčom"
-		return "Zamknuté"
-	return "Zavrieť" if d.open else "Otvoriť"
-
-
-func _door_use(id: String) -> void:
-	var d = doors[id]
-	if d.locked:
-		if id == "kid" and S.flags.get("key", false) and S.world == "real":
-			d.locked = false
-			S.flags.kid_open = true
-			play("click")
-			await get_tree().create_timer(0.45).timeout
-			set_door(id, true)
-			play("creak", -6.0)
-			return
-		play("click")
-		say("", "Zamknuté. Zvonka." if id == "front" else "Zamknuté.", 2.0)
-		return
-	set_door(id, not d.open)
-	play("creak", -6.0)
-
-
-func _tv_label():
-	if S.world == "real":
-		if S.inserted and S.can_enter:
-			return "Vojsť do televízora"
-		if S.inserted:
-			return null
-		if S.flags.get("tape1", false) and not S.flags.get("used1", false):
-			return "Vložiť kazetu do videa"
-		return null
-	return "Vystúpiť z kazety" if S.can_exit else "Ešte nemôžeš odísť"
-
-
-func _tv_use() -> void:
-	if S.world == "real":
-		if S.inserted and S.can_enter:
-			_enter_tape()
-		elif S.flags.get("tape1", false) and not S.flags.get("used1", false):
-			S.flags.used1 = true
-			S.inserted = true
-			play("click")
-			objective("")
-			say("MAMA", "Sadni si, jedlo vychladne.", 2.6)
-			say("OTEC", "Kto zase nechal otvorenú pivnicu?", 2.8)
-			say("LUCIA", "To nebol on. To bol ten pán.", 3.0)
-			await get_tree().create_timer(8.0).timeout
-			S.can_enter = true
-			objective("Obraz ťa ťahá dnu.")
-	elif S.can_exit:
-		_exit_tape()
-
-
-# =====================================================================
-# Tape worlds
-# =====================================================================
-func static_to(fn: Callable, ms := 900) -> void:
-	S.busy = true
-	play("stinger", -14.0, 2.0)
-	var tw := create_tween()
-	tw.tween_method(func(v): post.set_shader_parameter("stat", v), 0.0, 1.0, ms / 1000.0 * 0.6)
-	await tw.finished
-	fn.call()
-	await get_tree().create_timer(0.25).timeout
-	var tw2 := create_tween()
-	tw2.tween_method(func(v): post.set_shader_parameter("stat", v), 1.0, 0.0, ms / 1000.0)
-	await tw2.finished
-	S.busy = false
-
-
-func _enter_tape() -> void:
-	await static_to(func():
-		S.inserted = false
-		S.can_enter = false
-		S.can_exit = false
-		_set_world("t1")
-		spawn(Vector3(4.5, 0, 1.7), PI)
-		ang_s.on = true
-		ang_s.idx = 0
-		angel.visible = true
-		angel.position = Vector3(22.5, 0, 7.5)
-		set_door("kid", false, true)
-		objective("Rodina večeria v kuchyni."))
-
-
-func _exit_tape() -> void:
-	await static_to(func():
-		ang_s.on = false
-		angel.visible = false
-		_set_world("real")
-		spawn(Vector3(4.5, 0, 1.7), PI)
-		S.flags.done_t1 = true)
-
-
-func _update_angel(dt: float) -> void:
-	if not ang_s.on or S.world != "t1":
-		return
-	angel.look_at(Vector3(player.position.x, angel.position.y, player.position.z), Vector3.UP, true)
-	if not S.flags.get("t1_kitchen", false) and player.position.x > 9 and player.position.z < 6:
-		S.flags.t1_kitchen = true
-		objective("Nájdi kľúč od detskej izby.")
-		say("LUCIA", "On ťa vidí.", 2.6)
-	if S.flags.get("t1_kitchen", false):
-		var sh: Node3D = lucia_head
-		var to: Vector3 = player.position - family[2].position
-		var target: float = atan2(to.x, to.z) - family[2].rotation.y
-		sh.rotation.y = lerp_angle(sh.rotation.y, clampf(wrapf(target, -PI, PI), -1.3, 1.3), dt * 2.0)
-	if S.flags.get("key", false):
-		var v := (angel.position - player.position)
-		v.y = 0
-		var fw := Vector3(-sin(S.yaw), 0, -cos(S.yaw))
-		var in_view := v.normalized().dot(fw) > 0.45
-		var P := [Vector3(22.5, 0, 7.5), Vector3(19.7, 0, 7.45), Vector3(16.5, 0, 7.3), Vector3(13.6, 0, 7.3), Vector3(10.2, 0, 7.3)]
-		ang_s.away = 0.0 if in_view else ang_s.away + dt
-		if ang_s.away > 1.1 and ang_s.idx < P.size() - 1:
-			ang_s.idx += 1
-			ang_s.away = 0.0
-			angel.position = P[ang_s.idx]
-			play("step", -8.0, 0.6)
-
-
-# =====================================================================
-# Host (stalker): moves only when unseen
-# =====================================================================
-func _build_nav() -> void:
-	nav.resize(NW * NH)
-	for j in NH:
-		for i in NW:
-			var x := (i + 0.5) * NS
-			var z := (j + 0.5) * NS
-			var solid := 0
-			for r in rects:
-				var rr: Rect2 = r
-				var thin := rr.size.x < 0.3 or rr.size.y < 0.3
-				if thin:
-					if x - 0.25 < rr.end.x and x + 0.25 > rr.position.x and z - 0.25 < rr.end.y and z + 0.25 > rr.position.y:
-						solid = 1
-						break
-				elif x > rr.position.x - 0.12 and x < rr.end.x + 0.12 and z > rr.position.y - 0.12 and z < rr.end.y + 0.12:
-					solid = 1
-					break
-			for id in doors:
-				var d = doors[id]
-				if absf(x - d.x) < 0.6 and absf(z - d.z) < 0.6:
-					solid = 0
-			nav[i + j * NW] = solid
-
-
-func _cell(p: Vector3) -> Vector2i:
-	return Vector2i(clampi(int(p.x / NS), 0, NW - 1), clampi(int(p.z / NS), 0, NH - 1))
-
-
-func _nav_solid(i: int, j: int) -> bool:
-	if i < 0 or j < 0 or i >= NW or j >= NH:
-		return true
-	if nav[i + j * NW] == 1:
-		return true
-	var x := (i + 0.5) * NS
-	var z := (j + 0.5) * NS
-	for id in doors:
-		var d = doors[id]
-		if d.locked and not d.open and absf(x - d.x) < 0.6 and absf(z - d.z) < 0.6:
-			return true
-	for k in S.lit:
-		if S.lit[k] and _room_rect(k).grow(0.3).has_point(Vector2(x, z)):
-			return true
-	return false
-
-
-func _room_rect(k: String) -> Rect2:
-	match k:
-		"living": return Rect2(0, 0, 9, 8)
-		"kitchen": return Rect2(9, 0, 7, 6)
-		"kid": return Rect2(9, 9, 6, 6)
-	return Rect2()
-
-
-func _bfs(from: Vector3, to: Vector3) -> Array:
-	var s := _cell(from)
-	var t := _cell(to)
-	var prev := {}
-	var q := [s]
-	prev[s] = s
-	var head_i := 0
-	while head_i < q.size():
-		var c: Vector2i = q[head_i]
-		head_i += 1
-		if c == t:
-			break
-		for o in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-			var n: Vector2i = c + o
-			if prev.has(n) or _nav_solid(n.x, n.y):
-				continue
-			prev[n] = c
-			q.append(n)
-	if not prev.has(t):
-		return []
-	var path := []
-	var c2: Vector2i = t
-	while c2 != s:
-		path.push_front(Vector3((c2.x + 0.5) * NS, 0, (c2.y + 0.5) * NS))
-		c2 = prev[c2]
-	return path
-
-
-func _seen_by_player(p: Vector3) -> bool:
-	var v := p - player.position
-	v.y = 0
-	var d := v.length()
-	if d > 22:
-		return false
-	var fw := Vector3(-sin(S.yaw), 0, -cos(S.yaw))
-	if v.normalized().dot(fw) < cos(0.62):
-		return false
-	return _los(cam.global_position, p + Vector3(0, 1.6, 0))
-
-
-func _los(a: Vector3, b: Vector3) -> bool:
-	var q := PhysicsRayQueryParameters3D.create(a, b)
-	q.exclude = [player.get_rid()]
-	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
-
-
-func _safe() -> bool:
-	if S.world != "real":
-		return false
-	for k in S.lit:
-		if S.lit[k] and _room_rect(k).grow(-0.15).has_point(Vector2(player.position.x, player.position.z)):
-			return true
-	return false
-
-
-func _update_host(dt: float) -> void:
-	if not host_s.active or S.world != "real":
-		host.visible = false
-		return
-	host_s.cool = maxf(0.0, host_s.cool - dt)
-	if host_s.cool > 0.0:
-		host.visible = false
-		return
-	host.visible = true
-	var hp: Vector3 = host.position
-	var d := Vector2(hp.x - player.position.x, hp.z - player.position.z).length()
-	host.look_at(Vector3(player.position.x, hp.y, player.position.z), Vector3.UP, true)
-	# flashlight rule: light him and he kills you
-	if S.flash and flash.light_energy > 1.0 and not _safe():
-		var v := (hp + Vector3(0, 1.5, 0) - cam.global_position)
-		var fw := -cam.global_transform.basis.z
-		if v.length() < 13 and v.normalized().dot(fw) > cos(0.38) and _los(cam.global_position, hp + Vector3(0, 1.5, 0)):
-			host_s.lit += dt
-			if host_s.lit > 0.2 and not host_s.warned:
-				host_s.warned = true
-				S.flick = 0.7
-				play("heart", 0.0)
-			if host_s.lit > 1.0:
-				_die("Hosť nesmie vidieť svetlo.")
-				return
-		else:
-			host_s.lit = maxf(0.0, host_s.lit - dt * 2.0)
-	if _seen_by_player(hp):
-		host_head.rotation.z = 0.28 + sin(S.time * 2.0) * 0.08
-	else:
-		host_s.path_t -= dt
-		if host_s.path_t <= 0.0:
-			host_s.path_t = 0.45
-			host_s.path = _bfs(hp, player.position)
-		if host_s.path.size() > 0:
-			var n: Vector3 = host_s.path[0]
-			if Vector2(n.x - hp.x, n.z - hp.z).length() < 0.3:
-				host_s.path.pop_front()
-			else:
-				var dir := Vector3(n.x - hp.x, 0, n.z - hp.z).normalized()
-				host.position += dir * 2.35 * dt
-				host_s.walk += dt * 6.0
-		for id in doors:
-			var dd = doors[id]
-			if not dd.open and not dd.locked and Vector2(dd.x - hp.x, dd.z - hp.z).length() < 0.95:
-				set_door(id, true)
-				play("creak", -8.0)
-	if d > 15.0:
-		host_s.far_t += dt
-		if host_s.far_t > 4.0:
-			host_s.far_t = 0.0
-			_teleport_host_near()
-	else:
-		host_s.far_t = 0.0
-	a_host.volume_db = linear_to_db(clampf(0.25 - d * 0.02, 0.001, 1.0))
-	if d < 0.85 and not _safe():
-		_damage(40, "Hosť")
-		host_s.cool = 14.0
-		_teleport_host_far()
-
-
-func _teleport_host_near() -> void:
-	for k in 40:
-		var p := Vector3(randf_range(1, 23), 0, randf_range(1, 14))
-		var c := _cell(p)
-		if _nav_solid(c.x, c.y):
-			continue
-		var d := Vector2(p.x - player.position.x, p.z - player.position.z).length()
-		if d > 7 and d < 11 and not _seen_by_player(p):
-			host.position = p
-			return
-
-
-func _teleport_host_far() -> void:
-	var best := Vector3(22.5, 0, 7.5)
-	var bd := 0.0
-	for p in [Vector3(22.5, 0, 7.5), Vector3(2, 0, 1.8), Vector3(20.5, 0, 13.5), Vector3(13.5, 0, 13.2), Vector3(2, 0, 10.5)]:
-		var d := Vector2(p.x - player.position.x, p.z - player.position.z).length()
-		if d > bd:
-			bd = d
-			best = p
-	host.position = best
-
-
-func _damage(n: float, who: String) -> void:
-	if S.dead:
-		return
-	S.hp = maxf(0.0, S.hp - n)
-	S.hurt_t = 0.0
-	S.shake = 0.9
-	play("stinger", -6.0, 1.4)
-	S.dmg = 1.0
-	if S.hp <= 0.0:
-		_die(who + " ťa dostal.")
-
-
-func _die(text: String) -> void:
-	if S.dead:
-		return
-	S.dead = true
-	S.busy = true
-	play("stinger", 0.0)
-	post.set_shader_parameter("glitch", 1.0)
-	S.shake = 1.2
-	await get_tree().create_timer(1.3).timeout
-	post.set_shader_parameter("glitch", 0.0)
-	ui.death_text.text = text
-	ui.death.visible = true
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-
-
-func _retry() -> void:
-	ui.death.visible = false
-	S.dead = false
-	S.busy = false
-	S.hp = 100.0
-	S.flash = false
-	spawn(Vector3(4.5, 0, 6.3), 0.0)
-	host_s.cool = 10.0
-	_teleport_host_far()
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-
-# =====================================================================
-# Audio
-# =====================================================================
-func _build_audio() -> void:
-	sfx.step = Synth.step(0)
-	for i in 5:
-		sfx["step%d" % i] = Synth.step(i + 1)
-	sfx.breath = Synth.breath()
-	sfx.heart = Synth.heart()
-	sfx.click = Synth.click()
-	sfx.creak = Synth.creak()
-	sfx.stinger = Synth.stinger()
-	sfx.shriek = Synth.shriek()
-	sfx.whisper = Synth.whisper()
-	sfx.moan = Synth.moan()
-	sfx.drone = Synth.drone()
-	sfx.static = Synth.static_noise()
-	sfx.music = Synth.music_box()
-	a_drone = AudioStreamPlayer.new()
-	a_drone.stream = sfx.drone
-	a_drone.volume_db = -14
-	add_child(a_drone)
-	a_music = AudioStreamPlayer.new()
-	a_music.stream = sfx.music
-	a_music.volume_db = -16
-	add_child(a_music)
-	a_tv = AudioStreamPlayer3D.new()
-	a_tv.stream = sfx.static
-	a_tv.volume_db = -10
-	a_tv.unit_size = 2.0
-	a_tv.position = Vector3(4.5, 0.9, 1.0)
-	add_child(a_tv)
-
-
-func play(name: String, db := 0.0, pitch := 1.0) -> void:
-	var p := AudioStreamPlayer.new()
-	p.stream = sfx[name]
-	p.volume_db = db
-	p.pitch_scale = pitch
-	add_child(p)
-	p.play()
-	p.finished.connect(p.queue_free)
-
-
-# =====================================================================
-# UI
-# =====================================================================
 func _ls(font: Font, size: int, col := Color(0.92, 0.9, 0.86)) -> LabelSettings:
 	var l := LabelSettings.new()
 	l.font = font
@@ -1311,97 +460,6 @@ func _label(parent: Control, text: String, ls: LabelSettings, anchor: Vector4, a
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(l)
 	return l
-
-
-func _build_ui() -> void:
-	var post_layer := CanvasLayer.new()
-	post_layer.layer = 1
-	add_child(post_layer)
-	var pr := ColorRect.new()
-	pr.set_anchors_preset(Control.PRESET_FULL_RECT)
-	pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	post = ShaderMaterial.new()
-	post.shader = load("res://shaders/vhs.gdshader")
-	pr.material = post
-	post_layer.add_child(pr)
-	var hud_layer := CanvasLayer.new()
-	hud_layer.layer = 2
-	add_child(hud_layer)
-	var hud := Control.new()
-	hud.set_anchors_preset(Control.PRESET_FULL_RECT)
-	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud_layer.add_child(hud)
-	ui.hud = hud
-	ui.day = _label(hud, "DEŇ 1", _ls(f_osd, 34), Vector4(0.015, 0.02, 0.4, 0.08), HORIZONTAL_ALIGNMENT_LEFT)
-	ui.hp = _label(hud, "ŽIVOT 100", _ls(f_ui, 12, Color(0.8, 0.35, 0.3)), Vector4(0.015, 0.08, 0.4, 0.11), HORIZONTAL_ALIGNMENT_LEFT)
-	ui.batt = _label(hud, "BATERKA 90 %", _ls(f_ui, 12, Color(0.6, 0.58, 0.54)), Vector4(0.6, 0.93, 0.985, 0.97), HORIZONTAL_ALIGNMENT_RIGHT)
-	ui.hp.visible = false
-	ui.batt.visible = false
-	var bars := Control.new()
-	bars.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bars.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bars.draw.connect(_draw_hud.bind(bars))
-	hud.add_child(bars)
-	ui.bars = bars
-	ui.obj = _label(hud, "", _ls(f_ui, 15), Vector4(0.25, 0.02, 0.75, 0.09))
-	ui.prompt = _label(hud, "", _ls(f_ui, 17), Vector4(0.3, 0.53, 0.7, 0.58))
-	ui.sub = _label(hud, "", _ls(f_ui, 21), Vector4(0.15, 0.78, 0.85, 0.9))
-	ui.msg = _label(hud, "", _ls(f_ui, 32), Vector4(0.1, 0.3, 0.9, 0.42))
-	ui.safe = _label(hud, "", _ls(f_ui, 12, Color(1.0, 0.84, 0.47)), Vector4(0.015, 0.11, 0.4, 0.14), HORIZONTAL_ALIGNMENT_LEFT)
-	var dot := ColorRect.new()
-	dot.color = Color(0.92, 0.9, 0.86, 0.5)
-	dot.size = Vector2(4, 4)
-	dot.anchor_left = 0.5; dot.anchor_top = 0.5; dot.anchor_right = 0.5; dot.anchor_bottom = 0.5
-	dot.offset_left = -2; dot.offset_top = -2; dot.offset_right = 2; dot.offset_bottom = 2
-	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud.add_child(dot)
-	ui.dot = dot
-	var osd := Control.new()
-	osd.set_anchors_preset(Control.PRESET_FULL_RECT)
-	osd.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hud.add_child(osd)
-	_label(osd, "PLAY ▶", _ls(f_osd, 40), Vector4(0.7, 0.03, 0.97, 0.1), HORIZONTAL_ALIGNMENT_RIGHT)
-	_label(osd, "PM 7:42\nOKT. 14 1998", _ls(f_osd, 40), Vector4(0.5, 0.8, 0.975, 0.97), HORIZONTAL_ALIGNMENT_RIGHT)
-	ui.osd = osd
-	hud.visible = false
-	# overlays
-	var top := CanvasLayer.new()
-	top.layer = 3
-	add_child(top)
-	_build_title(top)
-	ui.pause = _panel(top, Color(0, 0, 0, 0.8))
-	_label(ui.pause, "PAUZA", _ls(f_osd, 64), Vector4(0.1, 0.3, 0.9, 0.45))
-	_button(ui.pause, "▶  POKRAČOVAŤ", Vector4(0.38, 0.5, 0.62, 0.58), _toggle_pause)
-	_button(ui.pause, "UKONČIŤ", Vector4(0.42, 0.61, 0.58, 0.68), func(): get_tree().quit())
-	ui.pause.visible = false
-	ui.death = _panel(top, Color(0.02, 0, 0, 0.92))
-	_label(ui.death, "KONIEC", _ls(f_osd, 72, Color(1, 0.3, 0.22)), Vector4(0.1, 0.28, 0.9, 0.42))
-	ui.death_text = _label(ui.death, "", _ls(f_ui, 18, Color(0.7, 0.66, 0.6)), Vector4(0.1, 0.43, 0.9, 0.5))
-	_button(ui.death, "↻  SKÚSIŤ ZNOVA", Vector4(0.38, 0.56, 0.62, 0.64), _retry)
-	ui.death.visible = false
-	ui.end = _panel(top, Color(0.02, 0.02, 0.025, 0.96))
-	_label(ui.end, "KONIEC DEMA", _ls(f_osd, 80), Vector4(0.1, 0.22, 0.9, 0.38))
-	_label(ui.end, "Kazeta 2 leží v tvojej ruke. Na páske je narodeninová oslava.\nV plnej hre ťa čaká ešte 6 nocí, 6 príšer a 3 konce.", _ls(f_type, 20, Color(0.75, 0.71, 0.64)), Vector4(0.12, 0.4, 0.88, 0.56))
-	_button(ui.end, "UKONČIŤ", Vector4(0.42, 0.66, 0.58, 0.74), func(): get_tree().quit())
-	ui.end.visible = false
-	ui.card = _panel(top, Color(0, 0, 0, 1))
-	_label(ui.card, "DEŇ 1", _ls(f_osd, 110), Vector4(0.1, 0.35, 0.9, 0.5))
-	_label(ui.card, "N Á V R A T", _ls(f_ui, 14, Color(0.55, 0.52, 0.47)), Vector4(0.1, 0.5, 0.9, 0.55))
-	ui.card.visible = false
-
-
-# =====================================================================
-# Title screen: Blender-modelled forest clearing with an old TV
-# =====================================================================
-var menu_root: Node3D
-var menu_cam: Camera3D
-var menu_moon: DirectionalLight3D
-var menu_tv_light: OmniLight3D
-var menu_screen_mat: ShaderMaterial
-var menu_static: AudioStreamPlayer
-var menu_on := false
-var menu_glitch := 0.0
-const MENU_AT := Vector3(200, 0, 200)
 
 
 func _build_menu_scene() -> void:
@@ -1555,7 +613,7 @@ void fragment(){
 	ff.position = Vector3(1.0, 1.0, -1.0)
 	menu_root.add_child(ff)
 	menu_static = AudioStreamPlayer.new()
-	menu_static.stream = sfx.static
+	menu_static.stream = audio.sfx.static
 	menu_static.volume_db = -26
 	add_child(menu_static)
 	menu_root.visible = false
@@ -1575,14 +633,12 @@ func _menu_button(parent: Control, text: String, cb: Callable) -> Button:
 	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
 	b.add_theme_constant_override("outline_size", 6)
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	b.mouse_entered.connect(func(): play("click", -18.0, 0.7))
+	b.mouse_entered.connect(func(): audio.play("click", -18.0, 0.7))
 	b.pressed.connect(cb)
 	parent.add_child(b)
 	return b
 
 
-var f_title: Font
-var f_title_ui: Font
 func _build_title(top: CanvasLayer) -> void:
 	f_title = load("res://fonts/Creepster-Regular.ttf")
 	f_title_ui = load("res://fonts/Anton-Regular.ttf")
@@ -1665,91 +721,14 @@ void fragment(){
 	menu.add_theme_constant_override("separation", 2)
 	root.add_child(menu)
 	ui.menu = menu
-	_menu_button(menu, "NOVÁ HRA", _start)
+	_menu_button(menu, "NOVÁ HRA", _new_game)
+	if save_data.get("snap") != null and int(save_data.snap.get("day", 1)) > 1:
+		_menu_button(menu, "POKRAČOVAŤ · DEŇ %d" % int(save_data.snap.day), _continue_game)
 	_menu_button(menu, "PRÍŠERY", func(): _gallery_show(true))
-	_menu_button(menu, "NASTAVENIA", func(): ui.menu.visible = false; ui.settings.visible = true)
+	_menu_button(menu, "NASTAVENIA", func(): uix.open_settings())
 	_menu_button(menu, "KONIEC", func(): get_tree().quit())
-	_label(root, "DEMO  ·  DEŇ 1", _ls(f_ui, 12, Color(0.55, 0.52, 0.47)), Vector4(0.06, 0.9, 0.5, 0.94), HORIZONTAL_ALIGNMENT_LEFT)
+	_label(root, "7 DNÍ · ASI HODINA · HRAJ SO SLÚCHADLAMI", _ls(f_ui, 12, Color(0.55, 0.52, 0.47)), Vector4(0.06, 0.9, 0.5, 0.94), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(root, "WASD pohyb · myš · E použiť · F baterka · Shift beh · Esc pauza", _ls(f_ui, 12, Color(0.45, 0.43, 0.4)), Vector4(0.55, 0.9, 0.97, 0.94), HORIZONTAL_ALIGNMENT_RIGHT)
-	# settings
-	var st := VBoxContainer.new()
-	st.anchor_left = 0.06
-	st.anchor_top = 0.48
-	st.anchor_right = 0.36
-	st.anchor_bottom = 0.9
-	st.add_theme_constant_override("separation", 8)
-	st.visible = false
-	root.add_child(st)
-	ui.settings = st
-	var add_slider := func(title: String, v: float, cb: Callable) -> void:
-		var l := Label.new()
-		l.text = title
-		l.label_settings = _ls(f_title_ui, 20, Color(0.8, 0.78, 0.74))
-		st.add_child(l)
-		var hs := HSlider.new()
-		hs.min_value = 0.0
-		hs.max_value = 1.0
-		hs.step = 0.01
-		hs.value = v
-		hs.custom_minimum_size = Vector2(0, 22)
-		hs.value_changed.connect(cb)
-		st.add_child(hs)
-	add_slider.call("HLASITOSŤ", 0.8, func(v): AudioServer.set_bus_volume_db(0, linear_to_db(maxf(v, 0.001))))
-	add_slider.call("CITLIVOSŤ MYŠI", 0.5, func(v): sens = 0.3 + v * 1.4)
-	var fs := CheckButton.new()
-	fs.text = "Celá obrazovka"
-	fs.add_theme_font_override("font", f_title_ui)
-	fs.add_theme_font_size_override("font_size", 20)
-	fs.toggled.connect(func(on): DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if on else DisplayServer.WINDOW_MODE_WINDOWED))
-	st.add_child(fs)
-	_menu_button(st, "SPÄŤ", func(): ui.settings.visible = false; ui.menu.visible = true)
-	AudioServer.set_bus_volume_db(0, linear_to_db(0.8))
-
-
-func _show_menu() -> void:
-	menu_on = true
-	menu_root.visible = true
-	menu_moon.visible = true
-	moon.visible = false
-	menu_cam.make_current()
-	ui.title.visible = true
-	ui.menu.visible = true
-	ui.settings.visible = false
-	ui.hud.visible = false
-	post.set_shader_parameter("vhs", 0.0)
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	a_drone.play()
-	menu_static.play()
-
-
-func _hide_menu() -> void:
-	menu_on = false
-	menu_root.visible = false
-	menu_moon.visible = false
-	moon.visible = true
-	cam.make_current()
-	ui.title.visible = false
-	menu_static.stop()
-
-
-# =====================================================================
-# Gallery of monsters (models from blender/build_monsters.py)
-# =====================================================================
-const GAL_AT := Vector3(-200, 0, -200)
-const MONSTERS := [
-	["m_host", "HOSŤ", "Hýbe sa, len keď sa nepozeráš.\nNikdy naň nesvieť baterkou."],
-	["m_butcher", "MÄSIAR", "Vidí aj počuje. Keď ťa zbadá, beží.\nUtekaj do rozsvietenej izby."],
-	["m_mother", "MATKA", "Je slepá. Loví podľa zvuku.\nKeď je blízko, nedýchaj."],
-	["m_sister", "SESTRA", "Nepozeraj sa jej do očí.\nČím dlhšie hľadíš, tým viac to bolí."],
-	["m_double", "DVOJNÍK", "Vyzerá ako ty a opakuje tvoje kroky.\nKeď sa na seba pozriete, rozbehne sa."],
-	["m_announcer", "HLÁSATEĽ", "Objaví sa iba v páskach.\nKeď začne vysielať, nepočúvaj."],
-]
-var gal_root: Node3D
-var gal_cam: Camera3D
-var gal_models: Array = []
-var gal_idx := 0
-var gal_on := false
-var gal_spin := 0.0
 
 
 func static_material() -> ShaderMaterial:
@@ -1855,7 +834,7 @@ func _gal_set(i: int) -> void:
 	ui.gal_name.text = MONSTERS[gal_idx][1]
 	ui.gal_desc.text = MONSTERS[gal_idx][2]
 	ui.gal_count.text = "%d / %d" % [gal_idx + 1, MONSTERS.size()]
-	play("stinger", -22.0, 1.6)
+	audio.play("stinger", -22.0, 1.6)
 
 
 func _gallery_show(on: bool) -> void:
@@ -1883,277 +862,217 @@ func _menu_process(dt: float) -> void:
 	menu_glitch = maxf(0.0, menu_glitch - dt * 3.0)
 	if randf() < dt * 0.25:
 		menu_glitch = 1.0
-		play("stinger", -30.0, 2.4)
+		audio.play("stinger", -30.0, 2.4)
 	menu_screen_mat.set_shader_parameter("glitch", menu_glitch)
 	menu_tv_light.light_energy = (2.0 + randf() * 0.5) * (0.25 if menu_glitch > 0.5 and randf() < 0.5 else 1.0)
 
 
-var hud_hp := 100.0
-var hud_batt := 90.0
-var hud_flash_hp := 0.0
+# ---------------------------------------------------------------- automated playthrough (testing)
+func _t(msg: String) -> void:
+	print("AUTOTEST ", msg, "  day=", game.S.day, " world=", game.S.world)
 
 
-func _hex(c: Vector2, r: float) -> PackedVector2Array:
-	var pts := PackedVector2Array()
-	for i in 7:
-		var a := PI / 6.0 + i * TAU / 6.0
-		pts.append(c + Vector2(cos(a), sin(a)) * r)
-	return pts
-
-
-func _draw_hud(c: Control) -> void:
-	var white := Color(0.95, 0.94, 0.9, 0.92)
-	var dim := Color(0.95, 0.94, 0.9, 0.35)
-	var base := Vector2(46, c.size.y - 118)
-	var font: Font = f_title_ui if f_title_ui else f_ui
-	var rows := [["hp", hud_hp / 100.0, str(int(round(hud_hp)))], ["batt", hud_batt / 100.0, "%d %%" % int(round(hud_batt))]]
-	for i in rows.size():
-		var kind: String = rows[i][0]
-		var v: float = clampf(rows[i][1], 0.0, 1.0)
-		var ctr := base + Vector2(i * 22, i * 60)
-		var low := v < 0.25
-		var accent := Color(0.95, 0.25, 0.2, 0.95) if low else white
-		if kind == "hp" and hud_flash_hp > 0.0:
-			accent = Color(1, 0.2, 0.15, 0.95).lerp(white, 1.0 - hud_flash_hp)
-		# hexagon badge
-		var hx := _hex(ctr, 25)
-		c.draw_colored_polygon(hx, Color(0.03, 0.03, 0.04, 0.6))
-		c.draw_polyline(hx, accent, 2.5, true)
-		c.draw_polyline(_hex(ctr, 30), Color(accent.r, accent.g, accent.b, 0.25), 1.5, true)
-		# icon
-		if kind == "hp":
-			var heart := PackedVector2Array()
-			for k in 40:
-				var t := k / 40.0 * TAU
-				heart.append(ctr + Vector2(16 * pow(sin(t), 3), -(13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t))) * 0.82 + Vector2(0, -1))
-			c.draw_colored_polygon(heart, accent)
-		else:
-			var r := Rect2(ctr + Vector2(-13, -8), Vector2(23, 16))
-			c.draw_rect(r, accent, false, 2.0, true)
-			c.draw_rect(Rect2(ctr + Vector2(10, -4), Vector2(4, 8)), accent, true, -1.0, true)
-			c.draw_rect(Rect2(r.position + Vector2(3, 3), Vector2((r.size.x - 6) * v, r.size.y - 6)), accent, true, -1.0, true)
-		# bar with a slanted end, like a gauge
-		var bp := ctr + Vector2(38, -12)
-		var bw := 230.0
-		var bh := 24.0
-		var frame := PackedVector2Array([bp, bp + Vector2(bw, 0), bp + Vector2(bw - 8, bh), bp + Vector2(0, bh), bp])
-		c.draw_colored_polygon(frame, Color(0.03, 0.03, 0.04, 0.45))
-		c.draw_polyline(frame, dim, 1.5, true)
-		var fw := maxf(0.0, (bw - 10) * v)
-		if fw > 1.0:
-			var fill := PackedVector2Array([bp + Vector2(3, 3), bp + Vector2(3 + fw, 3), bp + Vector2(3 + fw - 6 * minf(1.0, fw / 10.0), bh - 3), bp + Vector2(3, bh - 3)])
-			c.draw_colored_polygon(fill, Color(accent.r, accent.g, accent.b, 0.85))
-			# tick marks
-			var x := 20.0
-			while x < fw:
-				c.draw_line(bp + Vector2(3 + x, 5), bp + Vector2(3 + x - 3, bh - 5), Color(0, 0, 0, 0.18), 2.0, true)
-				x += 20.0
-		var txt: String = rows[i][2]
-		var tp := bp + Vector2(bw + 10, bh - 4)
-		c.draw_string(font, tp + Vector2(1, 1), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0, 0, 0, 0.6))
-		c.draw_string(font, tp, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, accent)
-
-
-func _panel(parent: Node, col: Color) -> ColorRect:
-	var p := ColorRect.new()
-	p.color = col
-	p.set_anchors_preset(Control.PRESET_FULL_RECT)
-	parent.add_child(p)
-	return p
-
-
-func _button(parent: Control, text: String, anchor: Vector4, cb: Callable) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.add_theme_font_override("font", f_osd)
-	b.add_theme_font_size_override("font_size", 30)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.11, 0.105, 0.1)
-	sb.border_color = Color(0.3, 0.28, 0.26)
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(6)
-	b.add_theme_stylebox_override("normal", sb)
-	var sbh := sb.duplicate()
-	sbh.border_color = Color(1, 0.3, 0.23)
-	b.add_theme_stylebox_override("hover", sbh)
-	b.add_theme_stylebox_override("focus", sbh)
-	b.add_theme_stylebox_override("pressed", sbh)
-	b.anchor_left = anchor.x; b.anchor_top = anchor.y; b.anchor_right = anchor.z; b.anchor_bottom = anchor.w
-	b.pressed.connect(cb)
-	parent.add_child(b)
-	return b
-
-
-func objective(t: String) -> void:
-	ui.obj.text = t.to_upper()
-
-
-func say(who: String, text: String, d := 2.6) -> void:
-	sub_q.append([who, text, d])
-
-
-func show_msg(t: String, d := 3.0) -> void:
-	ui.msg.text = t
-	msg_t = d
-
-
-func _toggle_pause() -> void:
-	if not S.running or S.dead:
-		return
-	S.paused = not S.paused
-	ui.pause.visible = S.paused
-	get_tree().paused = false
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if S.paused else Input.MOUSE_MODE_CAPTURED
-
-
-# =====================================================================
-# Flow
-# =====================================================================
-func _show_title() -> void:
-	spawn(Vector3(6.5, 0, 6.8), 0.6)
-	S.lit = {"living": true}
-	_set_world("real")
-	_show_menu()
-
-func _start() -> void:
-	_hide_menu()
-	S.lit = {}
-	_set_world("real")
-	ui.card.visible = true
-	post.set_shader_parameter("fade", 1.0)
-	spawn(Vector3(1.4, 0, 11.5), -PI / 2)
-	await get_tree().create_timer(2.4).timeout
-	ui.card.visible = false
-	ui.hud.visible = true
-	S.running = true
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	a_tv.play()
-	var tw := create_tween()
-	tw.tween_method(func(v): post.set_shader_parameter("fade", v), 1.0, 0.0, 1.8)
-	_day1()
-
-
-func _wait_until(cond: Callable) -> void:
+func _w(cond: Callable, limit := 60.0) -> bool:
+	var t := 0.0
 	while not cond.call():
 		await get_tree().process_frame
+		t += get_process_delta_time()
+		if t > limit:
+			_t("TIMEOUT")
+			return false
+	return true
 
 
-func _day1() -> void:
-	await get_tree().create_timer(1.5).timeout
-	objective("Choď do obývačky.")
-	await _wait_until(func(): return player.position.x < 9 and player.position.z < 8)
-	objective("Na stolíku leží kazeta.")
-	await _wait_until(func(): return S.flags.get("tape1", false))
-	objective("Vlož kazetu do televízora.")
-	await _wait_until(func(): return S.flags.get("done_t1", false) and S.world == "real" and not S.busy)
-	show_msg("Kľúč z kazety máš stále v ruke.", 3.5)
-	objective("Odomkni detskú izbu.")
-	await _wait_until(func(): return player.position.x > 11 and player.position.z > 6 and player.position.z < 9)
-	# the Host appears at the end of the hall
-	show_msg("Na konci chodby niekto stojí.", 3.0)
-	host.position = Vector3(22.5, 0, 7.5)
-	host_s.active = true
-	a_host.play()
-	play("moan", -6.0)
-	await _wait_until(func(): return S.flags.get("kid_open", false))
-	objective("Prehľadaj detskú izbu.")
-	await _wait_until(func(): return S.flags.get("tape2", false))
+func _tape(id: String) -> void:
+	var G = game
+	G.F["got_tape" + id] = true
+	await G.insert_tape(id)
+	await _w(func(): return G.S.can_enter or G.S.world == "fake" or G.S.live_stage > 0, 30)
+	if G.S.can_enter:
+		await G.enter_tape()
+	_t("in tape " + id)
+
+
+func _autotest() -> void:
+	var G = game
+	_hide_menu()
+	G.S.running = true
+	uix.hud_show(true)
+	G.start_day(1)
+	await _w(func(): return not G.S.busy)
+	G.S.invuln = 1e9
+	# ---- day 1
+	G.tp(4.0, 4.0, 0)
+	await _w(func(): return G.S.obj_text.begins_with("Na stolíku"))
+	G.take("tape1")
+	await _tape("1")
+	G.take("keyKid")
+	await G.exit_tape()
+	G.tp(12.0, 7.5, 0)
 	await get_tree().create_timer(1.0).timeout
-	S.running = false
-	host_s.active = false
-	ui.hud.visible = false
-	ui.end.visible = true
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	G.door_use("kid")
+	G.take("tape2")
+	await _tape("2")
+	await G.blow_candles()
+	await _w(func(): return G.isRealW(G.S.world) and not G.S.busy)
+	G.take("knife")
+	await _w(func(): return G.S.can_sleep == 1, 30)
+	G.F.slept1 = true
+	await _w(func(): return G.S.day == 2 and not G.S.busy, 30)
+	G.S.invuln = 1e9
+	_t("day 2")
+	# ---- day 2
+	G.F.sawKeypad = true
+	await get_tree().create_timer(0.5).timeout
+	G.F.studyOpen = true
+	G.take("tape3")
+	await _tape("3")
+	for r in ["reel1", "reel2", "reel3"]:
+		G.take(r)
+	await G.exit_tape()
+	await _w(func(): return G.S.can_sleep == 2, 30)
+	G.F.slept2 = true
+	await _w(func(): return G.S.day == 3 and not G.S.busy, 30)
+	G.S.invuln = 1e9
+	_t("day 3")
+	# ---- day 3
+	G.take("tape4")
+	await _tape("4")
+	G.clock_use()
+	await G.exit_tape()
+	await _w(func(): return G.S.obj_text == "Veľké hodiny.", 20)
+	G.F.clockOk = true
+	G.take("keyBase")
+	await G.base_door()
+	await G.base_door()
+	await _w(func(): return G.S.zone == "base", 10)
+	G.take("tape5")
+	await get_tree().create_timer(1.0).timeout
+	await G.stairs("house")
+	await _w(func(): return G.S.obj_text == "Pusti kazetu 5.", 20)
+	await _tape("5")
+	await G.kid_talk()
+	await G.exit_tape()
+	await _w(func(): return G.S.can_sleep == 3, 30)
+	G.F.slept3 = true
+	await _w(func(): return G.S.day == 4 and not G.S.busy, 30)
+	G.S.invuln = 1e9
+	_t("day 4")
+	# ---- day 4
+	G.tp(21.0, 12.0, 0)
+	await get_tree().create_timer(0.5).timeout
+	G.F.photosOk = true
+	G.take("tape6")
+	await _tape("6")
+	for r in ["toy1", "toy2", "toy3", "toy4"]:
+		G.take(r)
+	await G.exit_tape()
+	await _w(func(): return G.S.can_sleep == 4, 30)
+	G.F.slept4 = true
+	await _w(func(): return G.S.day == 5 and not G.S.busy, 30)
+	G.S.invuln = 1e9
+	_t("day 5")
+	# ---- day 5
+	G.tp(47.5, 1.5, 0)
+	G.S.zone = "base"
+	await get_tree().create_timer(0.5).timeout
+	G.F.powerOn = true
+	G.S.power = true
+	G.take("tape7")
+	G.tp(4.0, 3.0, 0)
+	G.S.zone = "house"
+	await _tape("7")
+	await G.kid_talk()
+	await G.exit_tape()
+	await _w(func(): return G.S.can_sleep == 5, 30)
+	G.F.slept5 = true
+	await _w(func(): return G.S.day == 6 and not G.S.busy, 30)
+	G.S.invuln = 1e9
+	_t("day 6")
+	# ---- day 6
+	G.take("tapeX")
+	await _tape("X")
+	await _w(func(): return G.S.live_stage >= 1, 20)
+	G.S.yaw += PI
+	await _w(func(): return G.F.get("revealed", false) and not G.S.busy, 20)
+	await G.base_door()
+	await _w(func(): return G.S.zone == "base", 10)
+	G.take("tape13")
+	await _w(func(): return G.S.can_sleep == 6, 40)
+	G.F.slept6 = true
+	await _w(func(): return G.S.day == 7 and not G.S.busy, 30)
+	G.S.invuln = 1e9
+	_t("day 7")
+	# ---- day 7
+	G.take("spool")
+	G.take("roll")
+	G.F.t13fixed = true
+	await _w(func(): return G.S.obj_text.begins_with("Pusti kazetu 13"), 20)
+	await _tape("13")
+	await _w(func(): return G.S.world == "hosp" and not G.S.busy, 20)
+	await get_tree().create_timer(3.0).timeout
+	await G.ending_wake()
+	await get_tree().create_timer(8.0).timeout
+	_t("DONE ending=" + str(G.S.ending))
+	get_tree().quit()
 
 
-# =====================================================================
-# Main loop
-# =====================================================================
-func _physics_process(dt: float) -> void:
-	if S.running and not S.paused and not S.busy and not S.dead:
-		_move_player(dt)
-
-
-func _process(dt: float) -> void:
-	if menu_on:
-		_menu_process(dt)
-	# subtitles
-	if sub_t > 0.0:
-		sub_t -= dt
-	elif sub_q.size() > 0:
-		var l: Array = sub_q.pop_front()
-		ui.sub.text = (l[0] + "   " if l[0] != "" else "") + l[1]
-		sub_t = l[2]
-	else:
-		ui.sub.text = ""
-	if msg_t > 0.0:
-		msg_t -= dt
-		if msg_t <= 0.0:
-			ui.msg.text = ""
-	# doors
-	for id in doors:
-		var d = doors[id]
-		var target: float = d.ang if d.open else 0.0
-		d.cur = lerpf(d.cur, target, minf(1.0, dt * 4.0))
-		d.pv.rotation.y = d.cur
-	# camera
-	S.shake = maxf(0.0, S.shake - dt * 1.4)
-	var sh: float = S.shake * S.shake
-	var bob: float = sin(S.bob) * 0.035
-	head.position = Vector3(cos(S.bob * 0.5) * 0.02, 1.6 + bob, 0) + Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * sh * 0.06
-	player.rotation.y = S.yaw
-	head.rotation.x = S.pitch + randf_range(-1, 1) * sh * 0.03
-	# flashlight
-	S.flick = maxf(0.0, S.flick - dt)
-	var fe := 0.0
-	if S.flash and S.world == "real":
-		fe = 9.0
-		if S.batt < 25.0:
-			fe *= 0.3 + 0.7 * S.batt / 25.0
-		if S.flick > 0.0 and randf() < 0.5:
-			fe *= 0.05
-	elif S.flash:
-		fe = 6.0
-	flash.light_energy = fe
-	torch.visible = S.running and not S.busy
-	torch_sway = torch_sway.lerp(Vector2.ZERO, minf(1.0, dt * 6.0))
-	torch_sway = torch_sway.clamp(Vector2(-0.04, -0.04), Vector2(0.04, 0.04))
-	var tb := Vector3(sin(S.bob * 0.5) * 0.012, absf(cos(S.bob * 0.5)) * 0.01, 0)
-	torch.position = torch.position.lerp(TORCH_REST + tb + Vector3(-torch_sway.x, torch_sway.y, 0), minf(1.0, dt * 12.0))
-	hand_light.light_energy = 0.18 if S.flash else 0.06
-	tv_light.light_energy = 0.7 + randf() * 0.4
-	if not S.running or S.paused:
-		return
-	S.time += dt
-	if S.flash and S.world == "real":
-		S.batt = maxf(0.0, S.batt - dt * 0.4)
-		if S.batt <= 0.0:
-			S.flash = false
-			show_msg("Baterka je vybitá.", 3.0)
-	S.hurt_t += dt
-	if S.hurt_t > 8.0 and S.hp < 100.0:
-		S.hp = minf(100.0, S.hp + dt * 2.0)
-	S.dmg = maxf(0.35 if S.hp < 35 else 0.0, S.get("dmg", 0.0) - dt * 1.4)
-	post.set_shader_parameter("dmg", S.dmg)
-	var tired_v: float = 0.85 if S.tired else pow(1.0 - S.stam / 100.0, 2.0) * 0.6
-	post.set_shader_parameter("tired", tired_v)
-	var exert: float = 1.0 if S.tired else clampf((70.0 - S.stam) / 60.0, 0.0, 1.0)
-	a_breath.volume_db = lerpf(a_breath.volume_db, linear_to_db(maxf(0.0005, exert * 0.22)), minf(1.0, dt * 2.0))
-	a_breath.pitch_scale = lerpf(a_breath.pitch_scale, 1.0 + exert * 0.45, minf(1.0, dt * 2.0))
-	if not a_breath.playing:
-		a_breath.play()
-	if S.hp < hud_hp - 0.5:
-		hud_flash_hp = 1.0
-	hud_flash_hp = maxf(0.0, hud_flash_hp - dt * 1.5)
-	hud_hp = lerpf(hud_hp, S.hp, minf(1.0, dt * 6.0))
-	hud_batt = lerpf(hud_batt, S.batt, minf(1.0, dt * 6.0))
-	ui.bars.queue_redraw()
-	ui.hp.text = "ŽIVOT  %d" % int(S.hp)
-	ui.batt.text = "BATERKA  %d %%" % int(S.batt)
-	ui.safe.text = "☀ SVETLO ŤA CHRÁNI" if _safe() else ""
-	if not S.busy and not S.dead:
-		_update_angel(dt)
-		_update_host(dt)
-	_pick()
-	ui.prompt.text = ("[E]  " + str(cur.lbl)) if cur else ""
-	ui.dot.color.a = 0.95 if cur else 0.45
+func _autotest2() -> void:
+	var G = game
+	_hide_menu()
+	G.S.running = true
+	uix.hud_show(true)
+	# death + retry from checkpoint
+	G.start_day(2)
+	await _w(func(): return not G.S.busy)
+	await get_tree().create_timer(2.0).timeout
+	G.F.sawKeypad = true
+	await get_tree().create_timer(1.0).timeout
+	_t("cp=" + str(G.CP != null))
+	G.S.knife = 1
+	G.mon_attack(G.MON.mother)
+	await get_tree().create_timer(0.3).timeout
+	G.act()
+	_t("knife left " + str(G.S.knife))
+	G.damage(200, "Matka")
+	await _w(func(): return G.S.dead)
+	await get_tree().create_timer(2.0).timeout
+	_t("dead, retry_cp=" + str(G.S.retry_cp))
+	G.retry()
+	await _w(func(): return not G.S.busy and not G.S.dead, 20)
+	await get_tree().create_timer(2.0).timeout
+	_t("after retry obj=" + G.S.obj_text + " step=" + str(G.S.step_n) + " replay=" + str(G.S.replay_n) + " cp_step=" + str(G.CP.step_n) + " fast=" + str(G.S.fast))
+	# hide + mic
+	G.hide(G.HIDES[0])
+	await get_tree().create_timer(0.5).timeout
+	G.mic_heard()
+	await get_tree().create_timer(0.5).timeout
+	G.unhide()
+	# bag, map, puzzles
+	G.U.open_bag(); await get_tree().create_timer(0.3).timeout; G.U.close_panel()
+	G.U.open_map(); await get_tree().create_timer(0.3).timeout; G.U.close_panel()
+	G.study_keypad(); await get_tree().create_timer(0.3).timeout; G.U.close_panel()
+	G.do_scare("behind"); await get_tree().create_timer(1.0).timeout
+	G.do_scare("slam"); G.do_scare("run"); G.do_scare("face")
+	await G.do_scare("dark")
+	# ending C
+	G.start_day(7)
+	await _w(func(): return not G.S.busy)
+	for k in C.NOTES:
+		G.F["read_" + k] = true
+	G.take("tape0")
+	await _tape("0")
+	await get_tree().create_timer(2.0).timeout
+	G.S.t0done = true
+	await G.ending_c()
+	_t("ending C=" + str(G.S.ending))
+	await get_tree().create_timer(2.0).timeout
+	# ending B
+	G.S.running = true
+	G.start_hosp()
+	await get_tree().create_timer(1.0).timeout
+	await G.ending_stay()
+	_t("ending B=" + str(G.S.ending))
+	await get_tree().create_timer(7.0).timeout
+	_t("DONE2")
+	get_tree().quit()

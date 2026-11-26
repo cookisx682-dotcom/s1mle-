@@ -227,3 +227,221 @@ static func chop() -> AudioStreamWAV:
 		var t := float(i) / RATE
 		b[i] = (lp * 1.8 + sin(t * TAU * (95.0 - t * 200.0)) * 0.6) * _env(i, n, 0.002, 0.06)
 	return _wav(b)
+
+# ---------------------------------------------------------------- generic builders
+static func _noise_burst(dur: float, cutoff: float, attack: float, decay: float, gain := 0.8, brown := false, f2 := -1.0) -> PackedFloat32Array:
+	var n := int(RATE * dur)
+	var b := PackedFloat32Array(); b.resize(n)
+	var lp := 0.0
+	var lp2 := 0.0
+	var br := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var x := randf_range(-1, 1)
+		if brown:
+			br = (br + 0.02 * x) / 1.02
+			x = br * 3.5
+		var fc := cutoff if f2 < 0 else cutoff * pow(f2 / cutoff, t / dur)
+		var a := clampf(fc / RATE * 6.28, 0.001, 1.0)
+		lp += (x - lp) * a
+		lp2 += (lp - lp2) * a
+		var e := t / attack if t < attack else exp(-(t - attack) / maxf(decay, 0.001))
+		b[i] = lp2 * e * gain * 2.0
+	return b
+
+static func _band(dur: float, f: float, q: float, attack: float, decay: float, gain := 0.6) -> PackedFloat32Array:
+	# two-pole resonator on white noise
+	var n := int(RATE * dur)
+	var b := PackedFloat32Array(); b.resize(n)
+	var w := TAU * f / RATE
+	var r := clampf(1.0 - w / (2.0 * q), 0.5, 0.9995)
+	var c1 := 2.0 * r * cos(w)
+	var c2 := -r * r
+	var y1 := 0.0
+	var y2 := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var y := randf_range(-1, 1) * (1.0 - r) * 2.0 + c1 * y1 + c2 * y2
+		y2 = y1
+		y1 = y
+		var e := t / attack if t < attack else exp(-(t - attack) / maxf(decay, 0.001))
+		b[i] = y * e * gain
+	return b
+
+static func _tone(dur: float, f: float, f2: float, wave: String, attack: float, decay: float, gain := 0.5) -> PackedFloat32Array:
+	var n := int(RATE * dur)
+	var b := PackedFloat32Array(); b.resize(n)
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var fr := f * pow(f2 / f, t / dur)
+		ph += fr / RATE
+		var p := fposmod(ph, 1.0)
+		var v := 0.0
+		match wave:
+			"saw": v = p * 2.0 - 1.0
+			"square": v = 1.0 if p < 0.5 else -1.0
+			"tri": v = 1.0 - absf(p * 4.0 - 2.0)
+			_: v = sin(p * TAU)
+		var e := t / attack if t < attack else exp(-(t - attack) / maxf(decay, 0.001))
+		b[i] = v * e * gain
+	return b
+
+static func _mix(parts: Array, offsets := []) -> PackedFloat32Array:
+	var n := 0
+	for i in parts.size():
+		var off := int(RATE * (offsets[i] if i < offsets.size() else 0.0))
+		n = maxi(n, off + parts[i].size())
+	var b := PackedFloat32Array(); b.resize(n)
+	for i in parts.size():
+		var off := int(RATE * (offsets[i] if i < offsets.size() else 0.0))
+		var p: PackedFloat32Array = parts[i]
+		for k in p.size():
+			b[off + k] += p[k]
+	return b
+
+static func slam() -> AudioStreamWAV:
+	return _wav(_mix([_noise_burst(0.7, 300, 0.003, 0.18, 1.2, true), _tone(0.6, 55, 35, "sine", 0.003, 0.2, 0.6)]))
+
+static func knock() -> AudioStreamWAV:
+	var parts := []
+	var offs := []
+	for i in 3:
+		parts.append(_noise_burst(0.15, 380, 0.002, 0.04, 1.1, true)); offs.append(i * 0.32)
+		parts.append(_tone(0.12, 110, 70, "sine", 0.002, 0.04, 0.35)); offs.append(i * 0.32)
+	return _wav(_mix(parts, offs))
+
+static func heavy() -> AudioStreamWAV:
+	return _wav(_mix([_noise_burst(0.3, 260, 0.004, 0.08, 1.0, true), _tone(0.25, 52, 38, "sine", 0.003, 0.08, 0.45)]))
+
+static func grunt() -> AudioStreamWAV:
+	return _wav(_mix([_tone(0.6, 85, 60, "saw", 0.05, 0.2, 0.3), _band(0.55, 420, 3, 0.05, 0.18, 0.5)]))
+
+static func crack() -> AudioStreamWAV:
+	var parts := []
+	var offs := []
+	for i in 3:
+		parts.append(_band(0.06, 2600 + randf() * 1500, 1.5, 0.001, 0.012, 0.7)); offs.append(i * 0.06 + randf() * 0.03)
+	return _wav(_mix(parts, offs))
+
+static func giggle() -> AudioStreamWAV:
+	var parts := []
+	var offs := []
+	for i in 4:
+		parts.append(_tone(0.16, 1050 - i * 40 + randf() * 60, 980 - i * 40, "tri", 0.01, 0.05, 0.12)); offs.append(i * 0.16)
+		parts.append(_band(0.1, 2800, 4, 0.005, 0.03, 0.15)); offs.append(i * 0.16)
+	return _wav(_mix(parts, offs))
+
+static func radio() -> AudioStreamWAV:
+	var parts := []
+	var offs := []
+	for i in 6:
+		var f := 200 + randf() * 500
+		parts.append(_tone(0.1, f, f, "square", 0.005, 0.04, 0.06)); offs.append(i * 0.1)
+	parts.append(_band(0.7, 2400, 2, 0.01, 0.25, 0.25)); offs.append(0.0)
+	return _wav(_mix(parts, offs))
+
+static func hurt() -> AudioStreamWAV:
+	return _wav(_mix([_noise_burst(0.35, 600, 0.003, 0.1, 1.0, true), _tone(0.4, 240, 120, "saw", 0.005, 0.12, 0.25), _band(0.3, 1200, 2, 0.005, 0.08, 0.4)], [0, 0, 0.05]))
+
+static func knife_hit() -> AudioStreamWAV:
+	return _wav(_mix([_band(0.15, 1800, 2, 0.001, 0.04, 0.9), _noise_burst(0.25, 500, 0.002, 0.06, 0.9, true)], [0, 0.03]))
+
+static func pant() -> AudioStreamWAV:
+	return _wav(_mix([_band(0.4, 900, 1.5, 0.12, 0.12, 0.35), _band(0.35, 1300, 2, 0.08, 0.1, 0.22)], [0, 0.4]))
+
+static func beep() -> AudioStreamWAV:
+	return _wav(_tone(0.15, 1000, 1000, "sine", 0.003, 0.05, 0.12))
+
+static func tick(back := false) -> AudioStreamWAV:
+	return _wav(_band(0.05, 2400.0 if back else 3600.0, 6, 0.001, 0.012, 0.35))
+
+static func pick() -> AudioStreamWAV:
+	return _wav(_mix([_band(0.09, 1500, 2, 0.002, 0.025, 0.4), _tone(0.1, 420, 420, "sine", 0.003, 0.03, 0.1)]))
+
+static func lock() -> AudioStreamWAV:
+	return _wav(_mix([_band(0.06, 2400, 1, 0.001, 0.015, 0.5), _band(0.1, 900, 3, 0.002, 0.03, 0.4), _band(0.18, 500, 2, 0.003, 0.05, 0.6)], [0, 0.06, 0.12]))
+
+static func insert() -> AudioStreamWAV:
+	return _wav(_mix([_band(0.15, 700, 2, 0.003, 0.04, 0.6), _tone(0.12, 90, 90, "sine", 0.003, 0.04, 0.4), _band(0.5, 3500, 1, 0.2, 0.15, 0.2)], [0, 0.15, 0.3]))
+
+static func whoosh(d := 1.1) -> AudioStreamWAV:
+	return _wav(_band(d, 3000, 0.6, d * 0.3, d * 0.3, 0.6))
+
+static func scream() -> AudioStreamWAV:
+	return _wav(_mix([_tone(1.6, 780, 420, "saw", 0.08, 0.6, 0.12), _tone(1.6, 820, 440, "saw", 0.08, 0.6, 0.1), _band(1.3, 1600, 1, 0.1, 0.45, 0.15)]))
+
+static func stab() -> AudioStreamWAV:
+	return _wav(_mix([_noise_burst(0.4, 7000, 0.002, 0.1, 0.9), _tone(0.5, 1100, 260, "saw", 0.003, 0.15, 0.25), _tone(0.5, 1130, 270, "saw", 0.003, 0.15, 0.2), _tone(0.45, 55, 35, "sine", 0.003, 0.15, 0.6)]))
+
+static func steps_above() -> AudioStreamWAV:
+	var parts := []
+	var offs := []
+	for i in 7:
+		parts.append(_noise_burst(0.2, 180, 0.004, 0.06, 0.8, true)); offs.append(i * 0.55)
+	return _wav(_mix(parts, offs))
+
+static func run_by() -> AudioStreamWAV:
+	var parts := []
+	var offs := []
+	for i in 9:
+		parts.append(_noise_burst(0.14, 520, 0.003, 0.04, 0.8, true)); offs.append(i * 0.21)
+		parts.append(_tone(0.08, 70, 70, "sine", 0.002, 0.03, 0.1)); offs.append(i * 0.21)
+	return _wav(_mix(parts, offs))
+
+static func blow() -> AudioStreamWAV:
+	return _wav(_band(0.8, 900, 0.5, 0.15, 0.25, 0.5))
+
+## chase music loop: low drum pulse + dissonant swell
+static func chase() -> AudioStreamWAV:
+	var beat := 0.21
+	var steps := 16
+	var parts := []
+	var offs := []
+	var pad := PackedFloat32Array(); pad.resize(int(RATE * beat * steps))
+	var phs := [0.0, 0.0, 0.0, 0.0, 0.0]
+	var fr := [110.0, 116.5, 155.6, 164.8, 233.0]
+	var lp := 0.0
+	for i in pad.size():
+		var t := float(i) / RATE
+		var v := 0.0
+		for k in 5:
+			phs[k] += fr[k] / RATE
+			v += (fposmod(phs[k], 1.0) * 2.0 - 1.0) * 0.09
+		lp += (v - lp) * 0.25
+		pad[i] = lp * (0.75 + 0.25 * sin(t * TAU * 11.0))
+	parts.append(pad); offs.append(0.0)
+	for k in steps:
+		if k % 4 == 0:
+			parts.append(_tone(0.3, 72, 38, "sine", 0.003, 0.1, 0.9)); offs.append(k * beat)
+			parts.append(_noise_burst(0.22, 300, 0.003, 0.06, 0.6, true)); offs.append(k * beat)
+		if k % 4 == 2:
+			parts.append(_band(0.18, 1900, 0.8, 0.003, 0.05, 0.4)); offs.append(k * beat)
+		parts.append(_band(0.05, 7000, 0.7, 0.001, 0.01, 0.08)); offs.append(k * beat)
+		if k == 8:
+			parts.append(_tone(0.7, 1700, 1150, "saw", 0.01, 0.25, 0.07)); offs.append(k * beat)
+	var b := _mix(parts, offs)
+	b.resize(int(RATE * beat * steps))
+	return _wav(b, true)
+
+static func hum(f := 38.0, cutoff := 160.0) -> AudioStreamWAV:
+	var n := RATE * 2
+	var b := PackedFloat32Array(); b.resize(n)
+	var ph := 0.0
+	var lp := 0.0
+	for i in n:
+		ph += f / RATE
+		lp += ((fposmod(ph, 1.0) * 2.0 - 1.0) - lp) * (cutoff / RATE * 6.28)
+		b[i] = lp * 0.8
+	return _wav(b, true)
+
+static func room_tone() -> AudioStreamWAV:
+	var n := RATE * 3
+	var b := PackedFloat32Array(); b.resize(n)
+	var br := 0.0
+	var lp := 0.0
+	for i in n:
+		br = (br + 0.02 * randf_range(-1, 1)) / 1.02
+		lp += (br * 3.5 - lp) * 0.045
+		b[i] = lp * 1.2
+	return _wav(b, true)

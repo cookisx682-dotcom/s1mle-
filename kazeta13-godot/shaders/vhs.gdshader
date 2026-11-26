@@ -10,6 +10,7 @@ uniform float fade : hint_range(0.0, 1.0) = 0.0;
 uniform float tired : hint_range(0.0, 1.0) = 0.0;
 uniform float dmg : hint_range(0.0, 1.0) = 0.0;
 uniform float grain = 0.06;
+uniform float bright = 1.0;
 
 float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
@@ -52,6 +53,7 @@ void fragment() {
 	c *= mix(0.25, 1.0, v);
 	c = mix(c, vec3(0.5, 0.0, 0.0), dmg * (1.0 - v) * 0.85);
 	c = mix(c, vec3(n * 0.85), clamp(stat, 0.0, 1.0));
+	c *= bright;
 	c *= 1.0 - fade;
 	COLOR = vec4(c, 1.0);
 }

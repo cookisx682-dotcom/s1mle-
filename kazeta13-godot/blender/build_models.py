@@ -382,15 +382,11 @@ def clock():
         sphere("finial", 0.035, (s * 0.24, 2.15, 0.1), "brass")
     sphere("finial", 0.045, (0, 2.16, 0.1), "brass")
     box("window", (0.26, 0.8, 0.01), (0, 0.85, 0.172), "glass_dark", 0)
-    cyl("rod", 0.004, 0.004, 0.55, (0, 0.95, 0.15), "brass", seg=6)
-    cyl("bob", 0.06, 0.06, 0.012, (0, 0.66, 0.15), "brass", rot=(math.pi / 2, 0, 0), seg=24)
     cyl("face", 0.19, 0.19, 0.012, (0, 1.75, 0.212), "clock_face", rot=(math.pi / 2, 0, 0), seg=32)
     cyl("ring", 0.205, 0.205, 0.01, (0, 1.75, 0.208), "brass", rot=(math.pi / 2, 0, 0), seg=32)
     for i in range(12):
         a = i / 12 * math.tau
         box("tick", (0.008, 0.03, 0.004), (math.sin(a) * 0.16, 1.75 + math.cos(a) * 0.16, 0.22), "black", 0, rot=(0, 0, -a))
-    box("hand_h", (0.012, 0.1, 0.004), (0.02, 1.79, 0.224), "black", 0, rot=(0, 0, -0.5))
-    box("hand_m", (0.008, 0.15, 0.004), (-0.05, 1.8, 0.226), "black", 0, rot=(0, 0, 0.7))
 
 
 def shelf():
@@ -659,6 +655,12 @@ def build_people():
                           person(1.68, "mama_cloth", "skin", 1.0, seated=True, hair="hair_brown")))
     save("otec", lambda: (M_("otec_cloth", (0.3, 0.26, 0.21), 0.9), M_("skin", (0.79, 0.67, 0.57), 0.6), M_("hair_dark", (0.08, 0.06, 0.05), 0.8),
                           person(1.82, "otec_cloth", "skin", 1.05, seated=True, hair="hair_dark")))
+    save("kid_sit", lambda: (M_("kid_cloth", (0.45, 0.52, 0.62), 0.9), M_("skin", (0.83, 0.72, 0.63), 0.6), M_("hair_dark", (0.12, 0.08, 0.05), 0.8),
+                             person(1.2, "kid_cloth", "skin", 0.95, seated=True, hair="hair_dark")))
+    save("kid_stand", lambda: (M_("kid_cloth", (0.6, 0.66, 0.72), 0.9), M_("skin", (0.83, 0.72, 0.63), 0.6), M_("hair_dark", (0.12, 0.08, 0.05), 0.8),
+                               person(1.2, "kid_cloth", "skin", 0.95, seated=False, hair="hair_dark")))
+    save("mama_hosp", lambda: (M_("mama2_cloth", (0.25, 0.27, 0.32), 0.9), M_("skin", (0.79, 0.67, 0.57), 0.6), M_("hair_brown", (0.18, 0.11, 0.06), 0.8),
+                               person(1.68, "mama2_cloth", "skin", 1.0, seated=True, hair="hair_brown")))
     save("lucia", lambda: (M_("lucia_cloth", (0.25, 0.37, 0.54), 0.9), M_("skin", (0.83, 0.72, 0.63), 0.6), M_("hair_blond", (0.55, 0.42, 0.2), 0.8),
                            person(1.32, "lucia_cloth", "skin", 0.95, seated=True, hair="hair_blond")))
 
