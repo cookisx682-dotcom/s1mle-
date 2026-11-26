@@ -4,6 +4,8 @@
 
 - `blender/build_models.py` – všetky modely (nábytok, dvere, postavy, ruka s baterkou, plachty cez cloth simuláciu)
 - `blender/build_menu.py` – scéna hlavného menu (les, televízor GOOD LUCK)
+- `blender/build_monsters.py` – 6 príšer (Hosť, Mäsiar, Matka, Sestra, Dvojník, Hlásateľ) so zapečenými textúrami
+- `blender/preview.py` – náhľad modelu v Cycles
 - `models/` – vyexportované `.glb`
 - `scripts/main.gd` – hra, `scripts/tex.gd` – textúry, `scripts/synth.gd` – zvuky
 
@@ -12,6 +14,7 @@ Modely znova vygeneruješ:
 ```
 blender -b -P blender/build_models.py -- models
 blender -b -P blender/build_menu.py -- models
+blender -b -P blender/build_monsters.py -- models
 ```
 
 Export: Godot → Project → Export → Windows Desktop / Linux.

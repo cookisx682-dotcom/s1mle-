@@ -30,3 +30,9 @@ environment/volumetric_fog/volume_size=96
 environment/volumetric_fog/volume_depth=96
 lights_and_shadows/directional_shadow/size=2048
 lights_and_shadows/positional_shadow/atlas_size=4096
+
+[importer_defaults]
+
+scene={
+"meshes/generate_lods": false
+}

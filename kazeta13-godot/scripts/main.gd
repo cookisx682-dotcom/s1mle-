@@ -84,6 +84,7 @@ func _ready() -> void:
 	_build_nav()
 	_build_ui()
 	_build_menu_scene()
+	_build_gallery()
 	_set_world("real")
 	_show_title()
 	if "--shots" in OS.get_cmdline_user_args():
@@ -100,6 +101,12 @@ func _snap(name: String) -> void:
 
 func _shots() -> void:
 	await _snap("0-menu")
+	_gallery_show(true)
+	for i in MONSTERS.size():
+		_gal_set(i)
+		gal_spin = 0.15
+		await _snap("g%d-%s" % [i, MONSTERS[i][0]])
+	_gallery_show(false)
 	_hide_menu()
 	ui.hud.visible = true
 	S.running = true
@@ -661,10 +668,10 @@ func _build_people() -> void:
 	var lucia := model("lucia", Vector3(13.6, 0, 3.6), -PI / 2, mem_g)
 	family = [mama, otec, lucia]
 	lucia_head = lucia.find_child("head", true, false)
-	host = model("host", Vector3.ZERO, 0.0, self)
+	host = model("m_host", Vector3.ZERO, 0.0, self)
 	host_head = host.find_child("head", true, false)
 	host.visible = false
-	angel = model("host", Vector3.ZERO, 0.0, self)
+	angel = model("m_host", Vector3.ZERO, 0.0, self)
 	angel.visible = false
 	a_host = AudioStreamPlayer3D.new()
 	a_host.stream = sfx.drone
@@ -1639,7 +1646,14 @@ void fragment(){
 		tm.set_shader_parameter("shadow", sh_pass)
 		tr.material = tm
 		root.add_child(tr)
-	var sub := _label(root, "Niektoré spomienky mali zostať na páske.", _ls(f_type, 22, Color(0.78, 0.74, 0.67)), Vector4(0.06, 0.4, 0.6, 0.46), HORIZONTAL_ALIGNMENT_LEFT)
+	ui.title_art = Control.new()
+	ui.title_art.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ui.title_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(ui.title_art)
+	for c in root.get_children():
+		if c is TextureRect and c != shade:
+			c.reparent(ui.title_art)
+	var sub := _label(ui.title_art, "Niektoré spomienky mali zostať na páske.", _ls(f_type, 22, Color(0.78, 0.74, 0.67)), Vector4(0.06, 0.4, 0.6, 0.46), HORIZONTAL_ALIGNMENT_LEFT)
 	var menu := VBoxContainer.new()
 	menu.anchor_left = 0.06
 	menu.anchor_top = 0.5
@@ -1649,6 +1663,7 @@ void fragment(){
 	root.add_child(menu)
 	ui.menu = menu
 	_menu_button(menu, "NOVÁ HRA", _start)
+	_menu_button(menu, "PRÍŠERY", func(): _gallery_show(true))
 	_menu_button(menu, "NASTAVENIA", func(): ui.menu.visible = false; ui.settings.visible = true)
 	_menu_button(menu, "KONIEC", func(): get_tree().quit())
 	_label(root, "DEMO  ·  DEŇ 1", _ls(f_ui, 12, Color(0.55, 0.52, 0.47)), Vector4(0.06, 0.9, 0.5, 0.94), HORIZONTAL_ALIGNMENT_LEFT)
@@ -1714,7 +1729,151 @@ func _hide_menu() -> void:
 	menu_static.stop()
 
 
+# =====================================================================
+# Gallery of monsters (models from blender/build_monsters.py)
+# =====================================================================
+const GAL_AT := Vector3(-200, 0, -200)
+const MONSTERS := [
+	["m_host", "HOSŤ", "Hýbe sa, len keď sa nepozeráš.\nNikdy naň nesvieť baterkou."],
+	["m_butcher", "MÄSIAR", "Vidí aj počuje. Keď ťa zbadá, beží.\nUtekaj do rozsvietenej izby."],
+	["m_mother", "MATKA", "Je slepá. Loví podľa zvuku.\nKeď je blízko, nedýchaj."],
+	["m_sister", "SESTRA", "Nepozeraj sa jej do očí.\nČím dlhšie hľadíš, tým viac to bolí."],
+	["m_double", "DVOJNÍK", "Vyzerá ako ty a opakuje tvoje kroky.\nKeď sa na seba pozriete, rozbehne sa."],
+	["m_announcer", "HLÁSATEĽ", "Objaví sa iba v páskach.\nKeď začne vysielať, nepočúvaj."],
+]
+var gal_root: Node3D
+var gal_cam: Camera3D
+var gal_models: Array = []
+var gal_idx := 0
+var gal_on := false
+var gal_spin := 0.0
+
+
+func static_material() -> ShaderMaterial:
+	var sm := ShaderMaterial.new()
+	var sh := Shader.new()
+	sh.code = "shader_type spatial;render_mode unshaded;float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}void fragment(){vec2 c=UV-.5;float n=h(floor(UV*vec2(160.,120.))+floor(TIME*30.)*1.7);vec3 col=vec3(n)*.9+.05;col*=.8+.2*sin(UV.y*500.+TIME*6.);col*=smoothstep(.8,.3,length(c));ALBEDO=col*1.4;}"
+	sm.shader = sh
+	return sm
+
+
+func _build_gallery() -> void:
+	gal_root = Node3D.new()
+	gal_root.position = GAL_AT
+	add_child(gal_root)
+	box(Vector3(12, 0.1, 12), Vector3(0, -0.05, 0), Tex.mat("concrete"), false, gal_root)
+	box(Vector3(12, 6, 0.2), Vector3(0, 3, -3.0), Tex.mat("concrete"), false, gal_root)
+	for m in MONSTERS:
+		var n := model(m[0], Vector3.ZERO, 0.0, gal_root)
+		n.visible = false
+		var scr = n.find_child("screen", true, false)
+		if scr:
+			(scr as MeshInstance3D).material_override = static_material()
+		gal_models.append(n)
+	var key := SpotLight3D.new()
+	key.position = Vector3(1.4, 3.6, 2.2)
+	key.light_color = Color(1.0, 0.86, 0.68)
+	key.light_energy = 9.0
+	key.spot_range = 9.0
+	key.spot_angle = 32.0
+	key.shadow_enabled = true
+	key.light_volumetric_fog_energy = 1.5
+	gal_root.add_child(key)
+	key.look_at(GAL_AT + Vector3(0, 1.0, 0))
+	var rim := SpotLight3D.new()
+	rim.position = Vector3(-1.6, 2.6, -2.2)
+	rim.light_color = Color(0.95, 0.15, 0.1)
+	rim.light_energy = 7.0
+	rim.spot_range = 8.0
+	rim.spot_angle = 40.0
+	gal_root.add_child(rim)
+	rim.look_at(GAL_AT + Vector3(0, 1.3, 0))
+	var fill := OmniLight3D.new()
+	fill.position = Vector3(-2.0, 1.4, 2.5)
+	fill.light_color = Color(0.5, 0.6, 0.9)
+	fill.light_energy = 0.5
+	fill.omni_range = 7.0
+	gal_root.add_child(fill)
+	gal_cam = Camera3D.new()
+	gal_cam.fov = 42
+	var ge: Environment = env.duplicate()
+	ge.background_color = Color(0.0, 0.0, 0.0)
+	ge.ambient_light_color = Color(0.5, 0.5, 0.6)
+	ge.ambient_light_energy = 0.05
+	ge.volumetric_fog_density = 0.045
+	ge.volumetric_fog_albedo = Color(0.6, 0.6, 0.65)
+	gal_cam.environment = ge
+	gal_root.add_child(gal_cam)
+	gal_cam.position = Vector3(0, 1.25, 4.6)
+	gal_cam.look_at(GAL_AT + Vector3(0, 1.15, 0))
+	gal_root.visible = false
+	# ui
+	var g := Control.new()
+	g.set_anchors_preset(Control.PRESET_FULL_RECT)
+	g.visible = false
+	ui.title.add_child(g)
+	ui.gallery = g
+	var nl := _label(g, "", _ls(f_title, 96, Color(0.95, 0.93, 0.89)), Vector4(0.05, 0.08, 0.5, 0.3), HORIZONTAL_ALIGNMENT_LEFT)
+	nl.label_settings.font_color = Color(0.88, 0.85, 0.8)
+	ui.gal_name = nl
+	ui.gal_desc = _label(g, "", _ls(f_type, 22, Color(0.8, 0.76, 0.7)), Vector4(0.05, 0.3, 0.45, 0.48), HORIZONTAL_ALIGNMENT_LEFT)
+	ui.gal_count = _label(g, "", _ls(f_ui, 13, Color(0.55, 0.52, 0.47)), Vector4(0.05, 0.48, 0.45, 0.52), HORIZONTAL_ALIGNMENT_LEFT)
+	var row := HBoxContainer.new()
+	row.anchor_left = 0.05
+	row.anchor_top = 0.62
+	row.anchor_right = 0.45
+	row.anchor_bottom = 0.86
+	row.add_theme_constant_override("separation", 26)
+	g.add_child(row)
+	var col := VBoxContainer.new()
+	row.add_child(col)
+	_menu_button(col, "◀  PREDOŠLÁ", func(): _gal_set(gal_idx - 1))
+	_menu_button(col, "ĎALŠIA  ▶", func(): _gal_set(gal_idx + 1))
+	_menu_button(col, "SPÄŤ", func(): _gallery_show(false))
+
+
+func _gal_set(i: int) -> void:
+	gal_idx = posmod(i, MONSTERS.size())
+	for k in gal_models.size():
+		gal_models[k].visible = k == gal_idx
+	gal_spin = 0.5
+	var aabb := AABB()
+	var first := true
+	for c in gal_models[gal_idx].find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = c
+		var bb: AABB = mi.global_transform * mi.get_aabb()
+		aabb = bb if first else aabb.merge(bb)
+		first = false
+	var h := aabb.size.y
+	var ctr := aabb.get_center()
+	var dist := h * 0.5 / tan(deg_to_rad(gal_cam.fov * 0.5)) * 1.18
+	gal_cam.global_position = Vector3(ctr.x - dist * 0.28, ctr.y + h * 0.04, ctr.z + dist)
+	gal_cam.look_at(Vector3(ctr.x - h * 0.22, ctr.y, ctr.z))
+	ui.gal_name.text = MONSTERS[gal_idx][1]
+	ui.gal_desc.text = MONSTERS[gal_idx][2]
+	ui.gal_count.text = "%d / %d" % [gal_idx + 1, MONSTERS.size()]
+	play("stinger", -22.0, 1.6)
+
+
+func _gallery_show(on: bool) -> void:
+	gal_on = on
+	gal_root.visible = on
+	menu_root.visible = not on
+	ui.gallery.visible = on
+	ui.menu.visible = not on
+	ui.title_art.visible = not on
+	if on:
+		gal_cam.make_current()
+		_gal_set(gal_idx)
+	else:
+		menu_cam.make_current()
+
+
 func _menu_process(dt: float) -> void:
+	if gal_on:
+		gal_spin += dt * 0.32
+		gal_models[gal_idx].rotation.y = sin(gal_spin) * 0.9
+		return
 	var t := Time.get_ticks_msec() / 1000.0
 	menu_cam.position = Vector3(-0.15 + sin(t * 0.13) * 0.12, 1.15 + sin(t * 0.21) * 0.04, 3.5 + sin(t * 0.09) * 0.08)
 	menu_cam.look_at(MENU_AT + Vector3(1.0 + sin(t * 0.11) * 0.05, 0.78, 0.0))

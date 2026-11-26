@@ -1,3 +1,5 @@
 build/
 .godot/
 __pycache__/
+models/m_*.jpg
+models/m_*.jpg.import
