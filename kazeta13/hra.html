@@ -85,6 +85,10 @@ body.touch #osd .tr{top:calc(env(safe-area-inset-top,0px) + 60px)}
 @keyframes eject{0%{transform:translateY(-120%) scale(.94);opacity:0}30%{opacity:1}70%{transform:translateY(6%) rotate(0)}100%{transform:translateY(10%) rotate(-4deg);opacity:1}}
 #outro .rew{margin:18px 0 0;font:400 24px/1 var(--f-osd);letter-spacing:.14em;color:var(--osd)}
 .repc{width:min(420px,88vw);height:auto;border-radius:8px;box-shadow:0 20px 50px #000}.repbar{width:min(420px,88vw);height:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}.repbar i{display:block;height:100%;width:0;background:#ff4a3a}
+.egg{position:fixed;inset:0;z-index:100;background:#000;display:grid;place-items:center;align-content:center;gap:10px;animation:eggshake .12s infinite}
+.egg canvas{height:min(78vh,640px);width:auto;filter:contrast(1.8) brightness(1.2);mix-blend-mode:screen}.egg p{margin:0;font:400 clamp(26px,5vw,44px)/1.1 var(--f-osd);letter-spacing:.1em;color:#ff4a3a;text-align:center;text-shadow:0 0 18px rgba(255,0,0,.6);padding:0 16px}
+@keyframes eggshake{25%{transform:translate(4px,-3px)}50%{transform:translate(-5px,2px)}75%{transform:translate(3px,4px)}}
+@media (prefers-reduced-motion:reduce){.egg{animation:none}}
 #safeL{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#ffd678;text-shadow:0 0 10px rgba(255,200,100,.5)}
 .meter.low{color:#d08f88}.meter.low .bar i{background:var(--rec)}
 #obj{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);left:50%;transform:translateX(-50%);width:min(520px,52vw);
@@ -1018,7 +1022,7 @@ item('tape6',tapeObj('6','HRAČKY',0,21.2,.915,14.55,.1),'Vziať kazetu 6 · HRA
 item('tape7',tapeObj('7','NOC',0,17.6,.515,14.6,.7),'Vziať kazetu 7 · NOC',w=>real(w)&&S.day===5&&!!F.powerOn);
 item('tapeX',tapeObj('?','',0,18.72,.935,10.2,1.2),'Vziať kazetu bez čísla',w=>w==='fake');
 item('tape13',tapeObj('13','REALITA',0,46.2,.915,11.2,.4),'Vziať kazetu 13 · REALITA',w=>w==='real'&&S.day===6&&!!F.revealed,()=>breakTape());
-item('knife',smallObj('knife',12.2,.925,.45),'Vziať nôž',w=>real(w),()=>{S.knife=3;msg('Nôž. Keď ťa niečo chytí, stlač E a bodni.',4);});
+item('knife',smallObj('knife',12.2,.925,.45),'Vziať nôž',w=>real(w),()=>{S.knife=3;msg('Nôž.',2);});
 item('keyKid',smallObj('key',10.2,.93,.4),'Vziať kľúč od detskej izby',w=>w==='t1',()=>{objective('Vráť sa k televízoru.');S.canExit=true;say(['MAMA','Ešte jeden tanier. Pre hosťa.',2.8]);});
 item('keyBase',smallObj('key',8.45,.25,.72),'Vziať kľúč od pivnice',w=>real(w)&&!!F.clockOk);
 [['reel1',17.2,.6,12.55],['reel2',22.3,.66,12.9],['reel3',13.6,.66,14.7]].forEach(r=>item(r[0],smallObj('reel',r[1],r[2],r[3]),'Vziať cievku pásky',w=>w==='a3',()=>{const n=['reel1','reel2','reel3'].filter(has).length;msg(`Cievka ${n} z 3`,2);if(n===3){S.canExit=true;objective('Máš všetky cievky. Bež k televízoru!');}}));
@@ -1049,7 +1053,7 @@ function switchPlate(x,y,z,ry,key){const g=new T.Group();g.position.set(x,y,z);g
  const tg=new T.MeshStandardMaterial({color:0x9a9284,emissive:0xffc070,emissiveIntensity:0,roughness:.5});const t=new T.Mesh(new T.BoxGeometry(.022,.04,.02),tg);t.position.z=.012;g.add(t);g.userData.tog=t;if(key)swMats[key]=g;return g;}
 for(const k in LIT){const w=LIT[k].sw;switchPlate(w[0],w[1],w[2],w[3],k);
  I({pos:()=>V(w[0],w[1],w[2]),r:2.0,when:()=>isRealW(S.world)&&!S.hidden,label:()=>S.lit[k]?'Zhasnúť svetlo':'Rozsvietiť',use:()=>{A.click();if(!S.power){say(['','Vypínač cvakol. Nič. Nejde prúd.',2.4]);return;}
-  S.lit[k]=!S.lit[k];applyWorld(S.world);if(S.lit[k]){A.noise({type:'bandpass',f:120,q:4,g:.25,d:.6});addClue('light');if(!F.litTip){F.litTip=1;msg('Svetlo. Sem si netrúfnu. Aspoň zatiaľ.',3.5);}}}});}
+  S.lit[k]=!S.lit[k];applyWorld(S.world);if(S.lit[k]){A.noise({type:'bandpass',f:120,q:4,g:.25,d:.6});addClue('light');}}});}
 for(const [x,y,z,ry] of[[10.2,1.3,6.1,0],[3.0,1.3,8.1,0],[16.1,1.3,9.1,0],[17.2,1.3,.1,0]]){switchPlate(x,y,z,ry);I({pos:()=>V(x,y,z),r:1.8,when:()=>isRealW(S.world)&&!S.hidden,label:()=>'Vypínač',use:()=>{A.click();say(['',['Cvak. Nič. Žiarovka je prasknutá.','Cvak. Tma. Niekto vykrútil žiarovku.','Cvak. Iskra. Nič.'][(Math.random()*3)|0],2.4]);}});}
 paintPos.forEach((p,i)=>I({pos:()=>V(p[0],p[1],p[2]),r:2.6,when:()=>S.world!=='hosp',label:()=>'Prezrieť obraz',use:()=>{addClue('p'+(i+1));showImage(PAINT[i],'Obraz '+['I','II','III','IV'][i]);}}));
 I({pos:()=>V(10.6,1.6,6.1),r:2.2,when:()=>S.world!=='hosp',label:()=>'Pozrieť fotku',use:()=>showImage(famCv[S.world==='fake'?1:0],S.world==='fake'?'Je na nej päť ľudí. Ten piaty je vyšší než dvere.':'Mama, otec, Lucia a ty. Október 1998.')});
@@ -1164,7 +1168,7 @@ function lightCheck(m,dt){if(!m.mesh.visible||S.hidden||m.stun>0||m.flee>0||safe
  if(d>13||v.dot(fw)<Math.cos(.38)||!los(S.x,S.z,m.x,m.z)){m.lit=Math.max(0,m.lit-dt*2);return;}m.lit+=dt;
  if(ruleAnom()){if(m.lit>.3){m.flee=6;m.lit=0;m.path=null;const s=spat(m.x,m.z);A.shriek(s.pan);}return;}
  if(m.lit>.2&&!m.warned){m.warned=1;S.flick=.7;A.noise({type:'bandpass',f:120,q:3,g:.6,d:.5});A.heart(1.2);}
- if(!S.lethal){if(m.lit>.55){S.flash=false;A.click();msg(`Nesvieť na neho! V realite ťa za to zabije.`,4);m.lit=0;}return;}
+ if(!S.lethal){if(m.lit>.55){S.flash=false;A.click();A.whisper(1,0);m.lit=0;}return;}
  if(m.lit>1.0)die(`${m.name} nesmie vidieť svetlo.`,m);}
 function updateMon(m,dt){if(!m.active||!m.visibleIn(S.world)){m.mesh.visible=false;return;}
  const same=m.zone===S.zone;m.mesh.visible=same&&!m.gone&&!(m.type==='sister'&&m.mode!=='chase'&&!m.present)&&!(m.type==='tv'&&m.delay>0)&&!(m.type==='host'&&m.cool>0);if(m.frozenPose)return;
@@ -1307,7 +1311,7 @@ function fluxTick(dt){const cfg=FLUX[S.day];const ok=cfg&&S.running&&!S.busy&&!S
  let target=isAnom(S.world)?1:0;
  if(ok){if(cfg.decoy){SC.fd=(SC.fd===undefined?cfg.decoy:SC.fd)-dt;if(SC.fd<=0){SC.fd=cfg.decoy*(.6+Math.random()*.8);S.decoy=.18+Math.random()*.25;fluxFlash(.4);}}
   if(cfg.every){if(S.flux){S.flux.t-=dt;if(S.flux.t<=0){S.flux=null;fluxFlash(.8);applyWorld(S.world);}}
-   else{SC.ft=(SC.ft===undefined?cfg.every*.6:SC.ft)-dt*dif().flux;if(SC.ft<=0){SC.ft=cfg.every*(.7+Math.random()*.6);S.flux={t:cfg.dur[0]+Math.random()*(cfg.dur[1]-cfg.dur[0])};fluxFlash(.9);addClue('flux');if(!F.fluxTip){F.fluxTip=1;say(['','…obraz preblikol…',2.4]);}applyWorld(S.world);}}}}
+   else{SC.ft=(SC.ft===undefined?cfg.every*.6:SC.ft)-dt*dif().flux;if(SC.ft<=0){SC.ft=cfg.every*(.7+Math.random()*.6);S.flux={t:cfg.dur[0]+Math.random()*(cfg.dur[1]-cfg.dur[0])};fluxFlash(.9);addClue('flux');applyWorld(S.world);}}}}
  else if(S.flux&&!ok&&(S.busy||!S.running)){}else if(!ok)S.flux=null;
  const vis=cfg&&cfg.vis!==undefined?cfg.vis:1;
  if(S.flux)target=isAnom(S.world)?(1-vis)*.6:vis;
@@ -1326,7 +1330,7 @@ async function introCine(){S.busy=true;S.lockCam=true;S.cine=true;S.skip=false;s
    requestAnimationFrame(step);};step();});
  S.wh=0;S.tvf=0;if(!S.skip){faceFlash(120);A.stinger();postU.glitch.value=1;await sleep(500);postU.glitch.value=0;}A.set(A.tv,0,.2);
  await tween(v=>postU.fade.value=v,postU.fade.value,1,600);setOSD(false);$('hud').classList.remove('cine');S.cine=false;S.lockCam=false;S.busy=false;}
-const CREDITS=['KAZETA 13','','V hlavných úlohách','Hosť','Matka','Mäsiar','Sestra','Hlásateľ','','Rodina','Mama · Otec · Lucia','','A {N|ty}, pred televízorom.','','Nahraté v októbri 1998.','Prehrané dnes.','','Vyrobené z tónov, šumu a strachu.','','Ďakujeme za pozornosť.','','◀◀ Kazeta sa previja…'];
+const CREDITS=['KAZETA 13','','V hlavných úlohách','Hosť','Matka','Mäsiar','Sestra','Hlásateľ','','Rodina','Mama · Otec · Lucia','','A {N|ty}, pred televízorom.','','Nahraté v októbri 1998.','Prehrané dnes.','','Vyrobené z tónov, šumu a strachu.','','Poďakovanie','Ďakujem každému, kto si túto kazetu pustil.','Ďakujem za odvahu. A za to, že svetlo zostalo svietiť.','','Vytvoril: cookisx682','','◀◀ Kazeta sa previja…'];
 function rollCredits(){const c=$('credits');c.innerHTML='';const inner=el('div','croll');[...CREDITS.slice(0,3),...(NM()?[NM(),'']:[]),...CREDITS.slice(3)].forEach((l,i)=>inner.appendChild(el(i===0?'b':'p',null,fmtN(l)||' ')));c.appendChild(inner);c.hidden=false;$('again').style.opacity=0;setTimeout(()=>$('again').style.opacity=1,6000);}
 
 /* ---------- night changes: spot what is different ---------- */
@@ -1437,6 +1441,15 @@ function playOutro(cb){const o=$('outro');$('outroName').textContent=NM()||'Kaze
  if(A.ctx){A.set(A.master,SET.vol,.3);A.noise({type:'bandpass',f:400,q:2,g:.5,d:.25,at:.4});A.tone({f:120,f2:60,g:.3,d:.4,at:.45});A.noise({type:'bandpass',f:2400,q:1,g:.15,d:1.6,at:.9,a:.3});}
  setTimeout(()=>{cb&&cb();},5200);}
 
+/* ---------- easter egg: choosing a name from the house ---------- */
+const EGG={host:'Hosť','hosť':'Hosť',lucia:'Lucia',lucka:'Lucia',mama:'Mama',matka:'Matka',otec:'Otec',masiar:'Mäsiar','mäsiar':'Mäsiar',sestra:'Sestra',dvojnik:'Dvojník','dvojník':'Dvojník',hlasatel:'Hlásateľ','hlásateľ':'Hlásateľ'};
+const eggName=()=>EGG[(NM()||'').toLowerCase()]||null;
+function nameEgg(next){const who=eggName();if(!who)return next();A.init();if(A.ctx&&A.ctx.resume)A.ctx.resume();
+ const ov=el('div','egg');const c=document.createElement('canvas');c.width=320;c.height=400;c.getContext('2d').drawImage(faceCv,0,0);ov.appendChild(c);const p=el('p',null,`${NM()}? To meno už niekto má.`);ov.appendChild(p);document.body.appendChild(ov);
+ A.stinger();setTimeout(()=>A.shriek(0),250);
+ setTimeout(()=>{p.textContent=who==='Hosť'?'Ja som Hosť. A odteraz aj ty.':`${who} ťa už čaká v dome.`;speakLine('???',p.textContent);A.moan(0,1);},1400);
+ setTimeout(()=>{ov.remove();next();},3600);}
+
 /* ---------- tape scenes ---------- */
 const cake=new T.Group();cake.position.set(12.5,.775,3.6);G.t2.add(cake);
 {cake.add(new T.Mesh(new T.CylinderGeometry(.17,.17,.13,28),M(0xe8d8c8,.6)));const top=new T.Mesh(new T.CylinderGeometry(.172,.172,.02,28),M(0xd45a7a,.5));top.position.y=.07;cake.add(top);
@@ -1463,11 +1476,11 @@ function startTape(id){const W={'0':'t0','1':'t1','2':'t2','3':'a3','4':'t4','5'
  if(W==='t4'){familySeat('tv');setOSD(true,'PM 9:30','OKT. 20 1998');objective('Veľké hodiny v obývačke stoja. Pozri sa na ne.');}
  if(W==='t5'){setOSD(true,'AM 2:40','OKT. 16 1998');pose(kid,'sit');place(kid,10.05,12.6,Math.atan2(14.3-10.05,14.3-12.6),G.t5);pose(angel);place(angel,14.3,14.3,Math.atan2(10-14.3,12.6-14.3));S.angelOn=true;setDoor('kid',true,false,true);objective('Detská izba. Prihovor sa dieťaťu.');}
  if(W==='t7'){setOSD(true,'AM 3:07','OKT. 21 1998');pose(kid);place(kid,9.72,13.4,0,G.t7);kid.rotation.x=-Math.PI/2;kid.position.y=.52;setDoor('kid',true,false,true);
-  setMon('host',{x:15,z:3,mode:'patrol',worlds:['t7'],wp:1,tapeOnly:true});objective('Dostaň sa do detskej izby. Hosť ťa nesmie vidieť.');S.objText2='Dostaň sa do detskej izby. Hosť ťa nesmie vidieť.';setTimeout(()=>{if(S.world==='t7')say(['','Svetlo a beh ťa prezradia.',3]);},2500);}
+  setMon('host',{x:15,z:3,mode:'patrol',worlds:['t7'],wp:1,tapeOnly:true});objective('Detská izba.');S.objText2='Detská izba.';}
  if(W==='a3'||W==='a6'){setOSD(true,'??:??','?? ?? ????',false,true);DOORL.forEach(d=>{if(d.id!=='front'&&d.id!=='base')setDoor(d.id,true,false,true);});
   setMon('tv',{x:22,z:13,worlds:['a3','a6'],delay:6,tapeOnly:true,speed:W==='a6'?2.9:2.6});
   if(W==='a6'){const s=MON.sister;Object.assign(s,{active:true,mode:'chase',x:2,z:12,contact:true,present:1,worlds:['real','a6']});pose(s.mesh);objective('Nájdi 4 Luciine hračky.');}
-  else objective('Niečo tu nie je v poriadku. Nájdi 3 cievky pásky.');
+  else objective('Nájdi 3 cievky pásky.');
 }}
 const _exitTape=exitTape;
 exitTape=async function(){const w=S.world;await _exitTape();if(doorSnap){doorSnap.forEach(([id,o,l])=>setDoor(id,o,l,true));doorSnap=null;}
@@ -1520,7 +1533,7 @@ function end(t,p){S.running=false;$('endT').textContent=t;$('endP').textContent=
 
 /* ---------- scares & ambience ---------- */
 const SC={t:50,amb:12,chop:null,first:true};
-const WHISPERS=['…{N}…','…{N|ty}… počujem ťa…','…{N}, poď dole…','…pozri sa za seba…','…nie si tu sám…','…vráť sa do kazety…','…on ťa vidí…','…prečo ma tu necháš?…','…zlatko, poď dole do pivnice…','…už je blízko…','…zhasni to svetlo…','…počujem ťa dýchať…','…toto nie je tvoj dom…'];
+const WHISPERS=['…{N}…','…{N}… si tu dvakrát…','…{N|ty}… počujem ťa…','…{N}, poď dole…','…pozri sa za seba…','…nie si tu sám…','…vráť sa do kazety…','…on ťa vidí…','…prečo ma tu necháš?…','…zlatko, poď dole do pivnice…','…už je blízko…','…zhasni to svetlo…','…počujem ťa dýchať…','…toto nie je tvoj dom…'];
 function scareOK(){return S.running&&!S.busy&&!S.dead&&!S.hidden&&!S.qte&&!S.inserted&&!S.feed&&!S.behind&&(isRealW(S.world)||S.world==='t1')&&!Object.values(MON).some(m=>m.active&&m.state==='chase');}
 function lightsTick(dt){const on=Object.keys(S.lit).filter(k=>S.lit[k]);if(!on.length||!isRealW(S.world)||S.busy){return;}SC.lt=(SC.lt===undefined?70:SC.lt)-dt;
  if(S.roomFlick){S.roomFlick.t-=dt;if(S.roomFlick.t<=0){const k=S.roomFlick.k;if(S.roomFlick.off){S.lit[k]=false;A.noise({type:'highpass',f:2500,g:.5,d:.12});A.noise({brown:true,f:200,g:.5,d:.3});say(['','Svetlo v '+LIT[k].name+' zhaslo.',2.6]);}S.roomFlick=null;applyWorld(S.world);}return;}
@@ -1557,17 +1570,17 @@ async function startDay(n,keep,cp){S.day=n;S.dead=false;S.busy=true;$('death').h
  postU.fade.value=1;$('dayCardT').textContent='DEŇ '+n;$('dayCardS').textContent=cp?'Pokračovanie':DAYNAME[n];$('dayCard').classList.add('show');$('dayL').firstChild.nodeValue='DEŇ '+n;
  runId++;setWorld('real');S.zone='house';SC.t=40+Math.random()*20;SC.amb=10;SC.chop=null;SC.ft=undefined;SC.fd=undefined;
  chooseChanges(n);await sleep(cp?1400:2600);$('dayCard').classList.remove('show');S.busy=false;tween(v=>postU.fade.value=v,1,0,1800);
- if(cp&&!cp.stepN)setTimeout(cpApply,0);if(!cp&&CHG_N[n])setTimeout(()=>msg(`Dom sa v noci zmenil. ${CHG_N[n]===1?'Jedna vec nesedí.':CHG_N[n]+' veci nesedia.'} Nájdi ich.`,4),9000);
+ if(cp&&!cp.stepN)setTimeout(cpApply,0);if(!cp&&CHG_N[n])setTimeout(()=>msg('Niečo je inak.',3),9000);
  try{await DAYS[n]();}catch(e){if(e!=='reset')console.error(e);}}
 async function endDay(){const n=S.day;S.busy=true;A.chase(false);await tween(v=>postU.fade.value=v,0,1,1800);monsOff();msg(n<7?'Svitá. Deň '+n+' je za tebou.':'',3);await sleep(2600);startDay(n+1);}
 function showDeath(text){ST.deaths++;stSave();S.deathsToday=(S.deathsToday||0)+1;const canCP=S.deathsToday===1&&CP&&CP.day===S.day;S.retryCP=canCP;
  $('deathP').textContent=text+(canCP?' Pokračuješ od posledného uloženia. Ešte jedna smrť a deň '+S.day+' začne odznova.':' Druhá smrť. Deň '+S.day+' sa začína odznova.');$('retry').innerHTML=canCP?'<span>↻</span>POKRAČOVAŤ':'<span>↻</span>DEŇ ODZNOVA';$('death').hidden=false;}
 function retry(){A.set(A.master,SET.vol,.3);if(S.retryCP){startDay(S.day,true,CP);}else{CP=null;try{localStorage.removeItem('k13cp');}catch(e){}S.deathsToday=0;startDay(S.day,true);}}
 async function hostIntro(){setMon('host',{x:22.5,z:7.5,mode:'stalk',worlds:['real'],rot:-Math.PI/2,dmg:20});msg('Na konci chodby niekto stojí.',3);A.moan(0,.6);await wait(2600);
- msg('To je HOSŤ. Hýbe sa, iba keď sa nepozeráš. V realite naň nikdy nesvieť.',5.5);S.flick=1;await wait(10000);A.whisper(1,0);MON.host.active=false;MON.host.mesh.visible=false;A.set(A.hostHum,0);MON.host.dmg=40;}
+ S.flick=1;await wait(10000);A.whisper(1,0);MON.host.active=false;MON.host.mesh.visible=false;A.set(A.hostHum,0);MON.host.dmg=40;}
 const DAYS={
 1:async()=>{S.lethal=false;spawn(1.4,11.5,-Math.PI/2);await wait(1500);objective('Choď do obývačky. Niekto nechal zapnutý televízor.');
- setTimeout(()=>{if(S.day===1&&!S.flash)say(['',isTouch?'Baterka: tlačidlo Svetlo.':'Baterka: kláves F.',3]);},4000);
+ 
  await until(()=>S.x<9&&S.z<8&&isRealW(S.world));objective('Na stolíku leží kazeta. Vezmi ju.');
  await until(()=>has('tape1'));objective('Vlož kazetu do televízora.');
  await until(()=>F.done_t1&&isRealW(S.world));msg('Kľúč z kazety máš stále v ruke.',3.5);objective('Odomkni detskú izbu na chodbe.');
@@ -1578,43 +1591,43 @@ const DAYS={
  if(!has('knife'))objective('V kuchyni na linke leží nôž. Vezmi si ho.');await until(()=>has('knife'));
  objective('Choď spať na gauč v obývačke.');S.canSleep=1;await until(()=>F.slept1);await endDay();},
 2:async()=>{spawn(4.5,6.2,0);setMon('mother',{x:21.5,z:7.5,worlds:['real'],state:'wander'});
- await wait(1200);msg('Niečo chodí po dome. Nevidí ťa. Ale počuje každý tvoj krok.',4.5);await wait(4000);
- objective('Pracovňa vedľa kuchyne je zamknutá na kód. Choď sa pozrieť.');
- await until(()=>F.sawKeypad||F.studyOpen);objective('Nájdi obrazy s rímskymi číslami I až IV. Spočítaj, čo je na nich.');
+ await wait(1200);msg('Niečo chodí po dome.',4.5);await wait(4000);
+ objective('Pracovňa je zamknutá.');
+ await until(()=>F.sawKeypad||F.studyOpen);objective('Nájdi kód.');
  await until(()=>F.studyOpen);objective('Prehľadaj pracovňu.');
  await until(()=>has('tape3'));objective('Pusti kazetu 3.');
- await until(()=>F.done_a3&&isRealW(S.world));objective('Choď spať na gauč. Potichu.');S.canSleep=2;await until(()=>F.slept2);await endDay();},
+ await until(()=>F.done_a3&&isRealW(S.world));objective('Choď spať.');S.canSleep=2;await until(()=>F.slept2);await endDay();},
 3:async()=>{spawn(4.5,6.2,0);setMon('mother',{x:21.5,z:11,worlds:['real'],state:'wander'});setMon('butcher',{x:48.2,z:8.8,state:'idle',idleT:1e9,roam:false,worlds:['real'],rot:Math.PI/2});
  await wait(1200);msg('Z pivnice sa ozýva sekanie.',3.5);await wait(3200);objective('Na kuchynskom stole leží kazeta.');
  await until(()=>has('tape4'));objective('Pusti kazetu 4.');
- await until(()=>F.done_t4&&isRealW(S.world));F.t4seen=1;objective('Nastav veľké hodiny v obývačke na čas z kazety.');
+ await until(()=>F.done_t4&&isRealW(S.world));F.t4seen=1;objective('Veľké hodiny.');
  await until(()=>has('keyBase'));objective('Odomkni pivnicu vo vstupnej hale.');
- await until(()=>S.zone==='base');objective('Kazeta 5 leží na Mäsiarovom pni. Nesmie ťa vidieť.');MON.butcher.idleT=12;MON.butcher.roam=true;
+ await until(()=>S.zone==='base');objective('Kazeta 5 je v pivnici.');MON.butcher.idleT=12;MON.butcher.roam=true;
  await until(()=>has('tape5'));const b=MON.butcher;b.state='chase';b.lost=0;A.grunt(1,0);objective('UTEČ HORE!');
- await until(()=>S.zone==='house');await wait(5000);objective('Pusti kazetu 5. Mäsiar je stále niekde v dome.');
+ await until(()=>S.zone==='house');await wait(5000);objective('Pusti kazetu 5.');
  await until(()=>F.done_t5&&isRealW(S.world));objective('Choď spať.');S.canSleep=3;await until(()=>F.slept3);await endDay();},
 4:async()=>{spawn(4.5,6.2,0);setMon('sister',{x:12,z:12,mode:'haunt',worlds:['real','a6'],resp:14});setMon('butcher',{x:12.5,z:7.5,state:'patrol',roam:true,roamBoth:true,worlds:['real']});
- await wait(1200);msg('Spálňa rodičov je po 26 rokoch odomknutá.',3.5);await wait(3800);msg('Ak uvidíš dievča s páskou na tvári, nepozeraj sa na ňu.',4.5);objective('Choď do spálne rodičov.');
- await until(()=>S.x>19&&S.z>9&&S.zone==='house');objective('Na komode sú fotky Lucie. Zoraď ich od najmladšej po najstaršiu.');
+ await wait(1200);msg('Spálňa rodičov je po 26 rokoch odomknutá.',3.5);await wait(3800);objective('Choď do spálne rodičov.');
+ await until(()=>S.x>19&&S.z>9&&S.zone==='house');objective('Fotky na komode.');
  await until(()=>F.photosOk);objective('V šuplíku komody je kazeta 6.');await until(()=>has('tape6'));objective('Pusti kazetu 6.');
  await until(()=>F.done_a6&&isRealW(S.world));objective('Choď spať.');S.canSleep=4;await until(()=>F.slept4);await endDay();},
 5:async()=>{spawn(4.5,6.2,0);S.power=false;F.baseOpen=1;DOORS.base.locked=false;applyWorld('real');tvU.on.value=0;
  setMon('mother',{x:20,z:7.5,worlds:['real'],state:'wander'});setMon('butcher',{x:47,z:8,state:'patrol',roam:true,worlds:['real']});setMon('sister',{x:12,z:12,mode:'haunt',worlds:['real'],resp:40});
- await wait(1200);msg('Vypadol prúd. Televízor je mŕtvy.',3.5);await wait(3200);objective('Poistková skriňa je v pivnici. Pivnica je otvorená.');
- await until(()=>S.zone==='base'&&Math.hypot(S.x-48,S.z-.6)<2.6||F.powerOn);if(!F.powerOn&&!F.sawDrawing)objective('Ako nastaviť páky? Možno to niekto nakreslil…');
- await until(()=>F.powerOn);tvU.on.value=1;objective('Prúd ide. V komore pri spálni leží kazeta 7.');
+ await wait(1200);msg('Vypadol prúd. Televízor je mŕtvy.',3.5);await wait(3200);objective('Poistky sú v pivnici.');
+ await until(()=>S.zone==='base'&&Math.hypot(S.x-48,S.z-.6)<2.6||F.powerOn);
+ await until(()=>F.powerOn);tvU.on.value=1;objective('Kazeta 7 je v komore.');
  await until(()=>has('tape7'));objective('Pusti kazetu 7.');
  await until(()=>F.done_t7&&isRealW(S.world));objective('Choď spať.');S.canSleep=5;await until(()=>F.slept5);await endDay();},
-6:async()=>{setWorld('fake');spawn(4.5,6.2,0);await wait(1200);msg('Ticho. Žiadne kroky. Žiadne sekanie.',3.5);await wait(3600);objective('Je až príliš ticho. Hľadaj ďalšiu kazetu.');
+6:async()=>{setWorld('fake');spawn(4.5,6.2,0);await wait(1200);msg('Ticho. Žiadne kroky. Žiadne sekanie.',3.5);await wait(3600);objective('Hľadaj ďalšiu kazetu.');
  await until(()=>has('tapeX'));objective('Pusti ju.');
- await until(()=>F.revealed&&!S.busy);F.baseOpen=1;DOORS.base.locked=false;msg('Toto nebola realita.',3);await wait(2500);
- setMon('host',{x:22.5,z:7.5,mode:'chase',worlds:['real'],speed:2.95});setMon('mimic',{x:2,z:13,state:'wander',worlds:['real']});objective('Hosť ťa naháňa! Uteč do pivnice. Kazeta 13 je tam.');
+ await until(()=>F.revealed&&!S.busy);F.baseOpen=1;DOORS.base.locked=false;await wait(2500);
+ setMon('host',{x:22.5,z:7.5,mode:'chase',worlds:['real'],speed:2.95});setMon('mimic',{x:2,z:13,state:'wander',worlds:['real']});objective('UTEČ DO PIVNICE!');
  await until(()=>S.zone==='base');MON.host.mode='stalk';MON.host.state='stalk';objective('Nájdi kazetu 13.');
- await until(()=>has('tape13'));objective('Kazeta praskla. Vráť sa hore a choď spať. Zajtra ju oprav.');S.canSleep=6;await until(()=>F.slept6);await endDay();},
+ await until(()=>has('tape13'));objective('Choď spať.');S.canSleep=6;await until(()=>F.slept6);await endDay();},
 7:async()=>{spawn(20.6,11.4,-Math.PI/2);F.baseOpen=1;DOORS.base.locked=false;setDoor('bed',true,false,true);
  setMon('mother',{x:4,z:11,worlds:['real'],state:'wander'});setMon('butcher',{x:12.5,z:2,state:'patrol',roam:true,roamBoth:true,worlds:['real']});setMon('sister',{x:12,z:12,mode:'haunt',worlds:['real'],resp:25});setMon('host',{x:2,z:2,mode:'stalk',worlds:['real']});setMon('mimic',{x:16,z:3,state:'wander',worlds:['real']});
- await wait(1200);msg('Posledný deň. Sú hore všetci.',3.5);await wait(3200);if(!F.t13fixed)objective('Kazeta 13 je zlomená. Nájdi náhradnú cievku a lepiacu pásku.');await until(()=>F.t13fixed||(has('spool')&&has('roll')));
- if(!F.t13fixed)objective('Oprav kazetu na stole v pracovni.');await until(()=>!!F.t13fixed);objective('Pusti kazetu 13 v obývačke.');if(allNotes())setTimeout(()=>{if(S.day===7)say(['','…nula… tam, kde spia hračky…',3.2]);},12000);await until(()=>S.world==='hosp');}};
+ await wait(1200);msg('Posledný deň.',3.5);await wait(3200);if(!F.t13fixed)objective('Oprav kazetu 13.');await until(()=>F.t13fixed||(has('spool')&&has('roll')));
+ if(!F.t13fixed)objective('Stôl v pracovni.');await until(()=>!!F.t13fixed);objective('Pusti kazetu 13 v obývačke.');if(allNotes())setTimeout(()=>{if(S.day===7)say(['','…nula… tam, kde spia hračky…',3.2]);},12000);await until(()=>S.world==='hosp');}};
 
 /* ---------- input ---------- */
 addEventListener('keydown',e=>{keys[e.code]=true;if(!$('story').hidden&&(e.code==='Space'||e.code==='Enter')){e.preventDefault();storyNext();return;}if(S.cine&&(e.code==='Space'||e.code==='Enter'||e.code==='Escape')){S.skip=true;return;}
@@ -1721,7 +1734,7 @@ if(save&&save.day>1){$('contGame').hidden=false;$('contGame').textContent='↻ P
 $('newGame').onclick=()=>{A.init();applySet();stReset();CP=null;try{localStorage.removeItem('k13cp');}catch(e){}if(A.ctx&&A.ctx.resume)A.ctx.resume();try{localStorage.removeItem('k13');}catch(e){}F={};S.batt=90;S.knife=0;SNAP=null;$('menu').hidden=true;$('howto').hidden=false;showHP(0);};
 const HP=[...document.querySelectorAll('.hpage')];let hp=0;function showHP(i){hp=i;HP.forEach((s,k)=>s.hidden=k!==i);$('pgNum').textContent=String(i+1).padStart(2,'0')+' / '+String(HP.length).padStart(2,'0');
  [...$('dots').children].forEach((d,k)=>d.classList.toggle('on',k===i));$('hPrev').disabled=i===0;$('hNext').innerHTML=i===HP.length-1?'ZAČAŤ<span>▶</span>':'ĎALEJ<span>▶</span>';A.click();}
-$('hPrev').onclick=()=>showHP(Math.max(0,hp-1));$('hNext').onclick=()=>{if(hp<HP.length-1)return showHP(hp+1);$('howto').hidden=true;$('story').hidden=false;try{document.activeElement&&document.activeElement.blur();}catch(e){}storyI=0;storyShow();startFn=()=>beginGame(1,false);};
+$('hPrev').onclick=()=>showHP(Math.max(0,hp-1));$('hNext').onclick=()=>{if(hp<HP.length-1)return showHP(hp+1);try{document.activeElement&&document.activeElement.blur();}catch(e){}nameEgg(()=>{$('howto').hidden=true;$('story').hidden=false;storyI=0;storyShow();startFn=()=>beginGame(1,false);});};
 $('contGame').onclick=()=>{A.init();applySet();if(A.ctx&&A.ctx.resume)A.ctx.resume();SNAP=save;F=JSON.parse(JSON.stringify(save.F));S.batt=save.batt;S.knife=save.knife;try{const c=JSON.parse(localStorage.getItem('k13cp')||'null');if(c&&c.day===save.day)CP=c;}catch(e){}beginGame(save.day,true);};
 $('retry').onclick=()=>{$('death').hidden=true;postU.fade.value=0;if(!isTouch)lockPointer();retry();};
 $('again').onclick=()=>location.reload();
