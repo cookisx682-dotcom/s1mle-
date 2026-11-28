@@ -143,7 +143,7 @@ img.ic{width:24px;height:24px;image-rendering:pixelated;vertical-align:middle;fl
       <kbd>WASD</kbd><span>chôdza</span>
       <kbd>1–7</kbd><span>výber stavby · <kbd>R</kbd> otočiť · <kbd>Q</kbd> zrušiť</span>
       <kbd>Ľavé</kbd><span>stavať (pás ťahaj myšou) · bez stavby: klik na stroj = info, drž na rude = ručná ťažba</span>
-      <kbd>Pravé</kbd><span>zbúrať (vráti materiál)</span>
+      <kbd>Pravé</kbd><span>zbúrať (aj <kbd>X</kbd>, <kbd>7</kbd> alebo Ctrl+klik), vráti materiál</span>
       <kbd>Koliesko</kbd><span>priblíženie</span>
     </div>
     <div class="row">
@@ -448,7 +448,8 @@ function render(){
  // hand mining target
  if(!tool&&mouse.in&&mouse.l&&mineT>0){ctx.fillStyle='rgba(255,179,71,.9)';ctx.fillRect(mouse.tx*T,mouse.ty*T+15,Math.round(16*mineT/.55),1)}
  // ghost
- if(tool&&mouse.in&&!launched){const d=BT[tool];const gx=mouse.tx-(d.w>1?Math.floor((d.w-1)/2):0),gy=mouse.ty-(d.h>1?Math.floor((d.h-1)/2):0);
+ if(tool==='del'&&mouse.in&&!launched){const b=bAt(mouse.tx,mouse.ty);const bx=b?b.x:mouse.tx,by=b?b.y:mouse.ty,bw=b?b.w:1,bh=b?b.h:1;ctx.fillStyle=b&&b.type!=='hub'?'rgba(255,80,80,.35)':'rgba(255,80,80,.12)';ctx.fillRect(bx*T,by*T,bw*T,bh*T);ctx.strokeStyle='#ff6b6b';ctx.lineWidth=1/z;ctx.strokeRect(bx*T+.5/z,by*T+.5/z,bw*T-1/z,bh*T-1/z)}
+ else if(tool&&mouse.in&&!launched){const d=BT[tool];const gx=mouse.tx-(d.w>1?Math.floor((d.w-1)/2):0),gy=mouse.ty-(d.h>1?Math.floor((d.h-1)/2):0);
    const bad=whyNot(tool,gx,gy);ctx.globalAlpha=.65;drawBuilding({type:tool,x:gx,y:gy,w:d.w,h:d.h,rot,anim:0,state:'idle',ghost:true},0);ctx.globalAlpha=1;
    ctx.fillStyle=bad?'rgba(255,80,80,.28)':'rgba(124,240,181,.22)';ctx.fillRect(gx*T,gy*T,d.w*T,d.h*T);
  }else if(mouse.in&&!launched){const b=bAt(mouse.tx,mouse.ty);ctx.strokeStyle=b?'rgba(255,179,71,.9)':'rgba(241,232,255,.35)';ctx.lineWidth=1/z;const bx=b?b.x:mouse.tx,by=b?b.y:mouse.ty,bw=b?b.w:1,bh=b?b.h:1;ctx.strokeRect(bx*T+.5/z,by*T+.5/z,bw*T-1/z,bh*T-1/z)}
@@ -493,7 +494,7 @@ function buildHot(){const h=$('#hot');h.innerHTML='';
 const delIcon=spr(16,16,P=>{P(3,3,2,2,'#ff6b6b');P(5,5,2,2,'#ff6b6b');P(7,7,2,2,'#ff6b6b');P(9,9,2,2,'#ff6b6b');P(11,11,2,2,'#ff6b6b');P(11,3,2,2,'#ff6b6b');P(9,5,2,2,'#ff6b6b');P(5,9,2,2,'#ff6b6b');P(3,11,2,2,'#ff6b6b')}).toDataURL();
 function refreshHot(){document.querySelectorAll('.hb').forEach(b=>{const k=b.dataset.k;b.classList.toggle('on',tool===k);if(k!=='del'){const u=unlocked(k);b.classList.toggle('lock',!u);b.title=u?BT[k].n+': '+costStr(BT[k].cost)+'\n'+BT[k].d:'Odomkne sa vo fáze '+(BT[k].ms+1)}})}
 const costStr=c=>Object.entries(c).map(([k,n])=>n+'× '+IT[k].n).join(', ');
-function selectTool(k){if(k&&k!=='del'&&!unlocked(k)){toast(BT[k].n+' sa odomkne vo fáze '+(BT[k].ms+1),true);sfx('err');return}tool=tool===k?null:k;refreshHot();if(tool)showInfo(null)}
+function selectTool(k){mouse.r=false;if(k&&k!=='del'&&!unlocked(k)){toast(BT[k].n+' sa odomkne vo fáze '+(BT[k].ms+1),true);sfx('err');return}tool=tool===k?null:k;refreshHot();if(tool)showInfo(null)}
 let invSig='';
 function renderInv(){const keys=ITEM_ORDER.filter(k=>inv[k]>0);const sig=keys.map(k=>k+inv[k]).join();if(sig===invSig)return;invSig=sig;
  $('#invg').innerHTML=keys.length?keys.map(k=>'<div title="'+IT[k].n+'"><img class="ic" alt="" src="'+ICON[k]+'"><span>'+Math.floor(inv[k])+' '+IT[k].n+'</span></div>').join(''):'<div style="color:var(--muted)">Prázdny</div>'}
@@ -549,14 +550,15 @@ const keys={};
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();keys[k]=true;
  if(k>='1'&&k<='6')selectTool(TOOLS[+k-1]);if(k==='7')selectTool('del');
  if(k==='r'){if(tool&&tool!=='del'){rot=(rot+(e.shiftKey?3:1))%4}else if(info&&info.type!=='hub'){info.rot=(info.rot+1)%4;sfx('place')}}
+ if(k==='x'){mouse.r=true;demolishAt()}
  if(k==='q'||k==='escape'){tool=null;drag=null;refreshHot();showInfo(null)}
  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault()});
-addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys[k]=false;if(k==='x')mouse.r=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
 function setMouse(e){mouse.sx=e.clientX;mouse.sy=e.clientY;mouse.wx=camX+e.clientX/zoom;mouse.wy=camY+e.clientY/zoom;mouse.tx=Math.floor(mouse.wx/T);mouse.ty=Math.floor(mouse.wy/T)}
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{setMouse(e);mouse.in=true;cv.setPointerCapture(e.pointerId);if(launched)return;
- if(e.button===2||tool==='del'){mouse.r=true;demolishAt();return}
+ if(e.button===2||tool==='del'||e.ctrlKey||e.altKey){mouse.r=true;demolishAt();return}
  if(e.button!==0)return;mouse.l=true;
  if(tool==='belt'){drag={x:mouse.tx,y:mouse.ty,b:null};placeBeltAt(mouse.tx,mouse.ty,rot);return}
  if(tool){const d=BT[tool];const gx=mouse.tx-(d.w>1?Math.floor((d.w-1)/2):0),gy=mouse.ty-(d.h>1?Math.floor((d.h-1)/2):0);const why=whyNot(tool,gx,gy);if(why){toast(why,true);sfx('err');return}place(tool,gx,gy,rot);return}
@@ -571,7 +573,7 @@ cv.addEventListener('pointerup',endP);cv.addEventListener('pointercancel',endP);
 cv.addEventListener('pointerleave',()=>{mouse.in=false;$('#tip').hidden=true});
 cv.addEventListener('wheel',e=>{e.preventDefault();zoom=clamp(zoom+(e.deltaY<0?1:-1),1,6);setMouse(e)},{passive:false});
 function placeBeltAt(x,y,r){const ex=bAt(x,y);if(ex){if(ex.type==='belt')ex.rot=r;return}const why=whyNot('belt',x,y);if(why){if(why.startsWith('Chýba')){toast(why,true);sfx('err')}return}place('belt',x,y,r)}
-function demolishAt(){const b=bAt(mouse.tx,mouse.ty);if(b&&b.type!=='hub')remove(b);else if(b&&b.type==='hub'&&tool==='del'){toast('Loď sa zbúrať nedá',true)}}
+function demolishAt(){const b=bAt(mouse.tx,mouse.ty);if(b&&b.type!=='hub'){remove(b);for(let k=0;k<8;k++)part((b.x+b.w/2)*T,(b.y+b.h/2)*T,(Math.random()-.5)*60,(Math.random()-.5)*60,.4,'#ff9a6b')}else if(b&&b.type==='hub'&&tool==='del'){toast('Loď sa zbúrať nedá',true)}}
 function tipUpdate(){const tip=$('#tip');if(!mouse.in||tool||launched){tip.hidden=true;return}const b=bAt(mouse.tx,mouse.ty);let h='';
  if(b){const st={work:'pracuje',idle:'čaká na suroviny',block:'výstup je plný'}[b.state]||'';h=BT[b.type].n+(b.type==='belt'||b.type==='hub'||b.type==='splitter'?'':'<small>'+(b.recipe?IT[REC[b.recipe].out].n+' · ':'')+st+'</small>')}
  else if(inMap(mouse.tx,mouse.ty)){const i=idx(mouse.tx,mouse.ty);if(ore[i])h=ORE_NAME[ore[i]]+'<small>drž myš = ručná ťažba</small>';else if(terr[i]===2)h='Skala';else if(terr[i]===3)h='Kyselinové jazierko'}
@@ -612,7 +614,8 @@ function newGame(){newWorld((Math.random()*1e9)|0);inv={fe_ingot:30};refreshHot(
 
 /* ============ LOOP ============ */
 let last=performance.now(),acc=0,miniT=0,saveT=0,running=false;
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
+function frame(now){try{step(now)}catch(e){console.error(e)}requestAnimationFrame(frame)}
+function step(now){const dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
  if(running){playTime+=dt;
   if(!launched){movePlayer(dt);handMine(dt);update(dt)}
   else{launchT+=dt;launchY=Math.max(0,(launchT-1.2))**2*60;if(launchT<1.2&&Math.random()<.6)part(hub.x*T+Math.random()*64,hub.y*T+58,(Math.random()-.5)*60,-Math.random()*20,.8,'#8d849b');if(launchT>4.2&&$('#end').hidden&&!launchedShown){launchedShown=true;endScreen()}}
@@ -623,7 +626,7 @@ function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
   miniT-=dt;if(miniT<=0){miniT=.4;reveal();drawMini();renderInv();renderGoal();renderHint();renderInfo(false)}
   saveT+=dt;if(saveT>15){saveT=0;save()}
   if(toastT>0){toastT-=dt;if(toastT<=0)toastEl.style.opacity=0}}
- render();requestAnimationFrame(frame)}
+ render()}
 let launchedShown=false;
 function start(cont){$('#intro').hidden=true;if(!(cont&&load()))newGame();launchedShown=ms>=MILES.length;if(ms>=MILES.length)launched=false;
  camX=player.x-VW/zoom/2;camY=player.y-VH/zoom/2;buildHot();running=true;reveal();drawMini();goalSig='';renderGoal();renderInv();renderHint();
