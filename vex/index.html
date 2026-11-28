@@ -544,6 +544,7 @@ function nestAtTiles(x,y,w,h){return nests.some(n=>n.hp>0&&x<n.x+2&&x+w>n.x&&y<n
 function whyNot(type,x,y,free){const d=BT[type];
  for(let j=0;j<d.h;j++)for(let i=0;i<d.w;i++){const tx=x+i,ty=y+j;if(!inMap(tx,ty))return'Mimo mapy';const t=terr[idx(tx,ty)];if(t===2)return'Na skale sa nedá stavať';if(t===3)return'Tu je '+PLAN.liquid.n.toLowerCase();if(grid[idx(tx,ty)])return'Miesto je obsadené'}
  if(nestAtTiles(x,y,d.w,d.h))return'Tu je hniezdo potvôr';
+ if(type!=='belt'&&type!=='splitter'&&player.alive&&player.x+4>x*T&&player.x-4<(x+d.w)*T&&player.y+6>y*T&&player.y-2<(y+d.h)*T)return'Tu stojíš ty, ustúp kúsok bokom';
  if((type==='drill'||type==='drill2')&&!oreUnder(x,y,2,2).n)return'Vrták musí stáť na rude';
  if(!free&&!afford(d.cost))return'Chýba: '+Object.entries(d.cost).filter(([k,n])=>(inv[k]||0)<n).map(([k,n])=>IT[k]+' '+Math.floor(inv[k]||0)+'/'+n).join(', ');
  return null}
@@ -1002,6 +1003,7 @@ function solid(px,py){const x=Math.floor(px/T),y=Math.floor(py/T);if(!inMap(x,y)
 function movePlayer(dt){if(!player.alive){player.vx=player.vy=0;return}let ax=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),ay=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);const l=Math.hypot(ax,ay)||1;const sp=92;
  if(!$('#tree').hidden){ax=ay=0}
  player.vx=ax/l*sp;player.vy=ay/l*sp;if(ax&&!nearestTarget(player.x,player.y,6*T))player.face=ax;const r=4;
+ if(solid(player.x,player.y)||solid(player.x,player.y+5)){player.x+=player.vx*dt;player.y+=player.vy*dt;if(ax||ay)player.walk+=dt;return}
  const nx=player.x+player.vx*dt;if(!solid(nx+Math.sign(player.vx)*r,player.y)&&!solid(nx+Math.sign(player.vx)*r,player.y+5))player.x=nx;
  const ny=player.y+player.vy*dt;if(!solid(player.x-r,ny+(player.vy>0?6:-2))&&!solid(player.x+r,ny+(player.vy>0?6:-2)))player.y=ny;
  if(ax||ay)player.walk+=dt}
