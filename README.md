@@ -25,16 +25,19 @@ Alebo si stiahni [Kazeta13.zip](kazeta13/Kazeta13.zip), rozbaľ ho a otvor `hra.
 
 # Planéta Vex
 
-2D pixel-art hra o stavbe továrne. Tvoja loď KX-13 núdzovo pristála na fialovej planéte Vex. Ťaž rudu, stav pásy a stroje, sám si vyberaj výskum a postav raketu domov.
+2D pixel-art hra o stavbe továrne a prežití. Tvoja loď KX-13 núdzovo pristála na planéte Vex. Ťaž rudu, stav pásy a stroje, bráň sa potvorám a skúmaj cestu domov cez tri planéty.
 
 <p align="center"><img src="vex/title.png" width="396" alt="Planéta Vex"></p>
 
 **Hrať:** https://cookisx682-dotcom.github.io/s1mle-/vex/ (alebo otvor `vex/index.html`)
 
-- Vrták, pás, pec, rozdeľovač, výrobňa a montáž
-- Strom výskumu: sám vyberáš, čo odomkneš (11 výskumov), až po raketu domov
-- Ruda → ingoty → plechy, kolesá, drôt → obvody, motory → raketa
-- 5 farebných oblastí: fialová púšť, tyrkysová džungľa, oranžové duny, ľadová planina, ružové kryštály
-- 4 druhy rúd, vexit ďaleko od lode, minimapa, ručná ťažba, ukladanie postupu
+- **3 planéty:** Vex (fialová), Kryo (ľadová), Ignis (ohnivá), každá s vlastnými oblasťami, rudami a potvorami
+- **Strom výskumu:** 31 výskumov v 6 vetvách + nekonečné výskumy, sám vyberáš poradie
+- **Továreň:** vrtáky, pásy, pece, výrobne, montáže, kontajnery, rozdeľovače
+- **Elektrina:** reaktor lode, generátory na uhlie, solárne panely, vexitový reaktor
+- **Deň a noc:** v noci útočia vlny potvôr, cez deň sa potulujú pri hniezdach
+- **Obrana:** múry, guľometné a laserové veže, tvoja zbraň strieľa sama
+- 4 druhy potvôr vrátane obrovského Kolosa, hniezda, mimozemské tkanivo na výskum
+- 3 obtiažnosti vrátane mierovej (bez potvôr), automatické ukladanie
 
-**Ovládanie:** WASD chôdza · 1–6 stavby · R otočiť · Q zrušiť · ľavé = stavať · pravé = zbúrať · X zbúrať · T výskum · koliesko = priblíženie
+**Ovládanie:** WASD chôdza · 1–9 stavby · Tab kategória · R otočiť · Q zrušiť · ľavé = stavať · pravé / X = zbúrať · T výskum · M mapa · koliesko = priblíženie
