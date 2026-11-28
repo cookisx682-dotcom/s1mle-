@@ -68,7 +68,8 @@ img.ic{width:24px;height:24px;image-rendering:pixelated;vertical-align:middle;fl
 #hot{left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;gap:6px;padding:6px;max-width:calc(100% - 28px);overflow-x:auto}
 .hb{position:relative;width:62px;flex:none;background:var(--panel2);border:2px solid var(--line);padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;line-height:1.05}
 .hb img{width:36px;height:36px;image-rendering:pixelated}
-.hb.on{border-color:var(--accent);background:#3a2c4f}
+.hb{border-bottom:4px solid var(--hc,var(--line))}
+.hb.on{border-color:var(--hc,var(--accent));background:color-mix(in srgb,var(--hc,#ffb347) 22%,var(--panel2))}
 .hb.lock{opacity:.35}
 .hb kbd{position:absolute;left:3px;top:1px;font:inherit;font-size:11px;color:var(--muted)}
 .hb.del{color:var(--bad)}
@@ -93,13 +94,16 @@ img.ic{width:24px;height:24px;image-rendering:pixelated;vertical-align:middle;fl
 .thead h1{font-size:30px}
 .tree{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:12px;overflow-x:auto;padding-bottom:4px}
 .tcol{display:flex;flex-direction:column;gap:10px;min-width:0}
-.node{background:var(--panel2);border:2px solid var(--line);padding:9px;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
-.node b{font-size:16px}
+.tcol h3{color:var(--tc);font-weight:700}
+.node{background:color-mix(in srgb,var(--tc) 9%,var(--panel2));border:2px solid color-mix(in srgb,var(--tc) 45%,var(--line));padding:0 9px 9px;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
+.node .nh{font-size:16px;margin:0 -9px 2px;padding:5px 9px;background:color-mix(in srgb,var(--tc) 30%,var(--panel2));color:#fff}
 .node .u{color:var(--muted)}
-.node.done{border-color:var(--ok)}
-.node.av{border-color:var(--accent)}
+.node.av{border-color:var(--tc);box-shadow:0 0 12px color-mix(in srgb,var(--tc) 35%,transparent)}
+.node.av .nh{background:var(--tc);color:#1a1024}
+.node.done .nh{background:color-mix(in srgb,var(--ok) 55%,var(--panel2));color:#0d2a1e}
 .node.lock{opacity:.5}
-.node.goal{box-shadow:0 0 0 2px var(--accent)}
+.node.goal{outline:2px solid #fff;outline-offset:2px}
+.node .btn.go{background:var(--tc);border-color:#fff;color:#1a1024}
 .node .cost{display:flex;flex-wrap:wrap;gap:4px 8px}
 .node .cost span{display:flex;align-items:center;gap:2px;font-variant-numeric:tabular-nums}
 .node .cost .no{color:var(--bad)}
@@ -243,6 +247,7 @@ const RES=[
 ];
 const RESN={};RES.forEach(r=>RESN[r.id]=r);
 const TIERS=['Základy','Priemysel','Elektronika','Pokrok','Cesta domov'];
+const TCOL=['#ffb347','#4fe0c8','#6fa8ff','#ff7be6','#ffd84a'];
 
 /* ============ PIXEL ART ============ */
 function cnv(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
@@ -335,20 +340,22 @@ const BICON={};
 
 /* ============ WORLD GEN ============ */
 let SEED=1;
-const terr=new Uint8Array(MW*MH),ore=new Uint8Array(MW*MH),deco=new Uint8Array(MW*MH),explored=new Uint8Array(MW*MH);
+const biome=new Uint8Array(MW*MH),terr=new Uint8Array(MW*MH),ore=new Uint8Array(MW*MH),deco=new Uint8Array(MW*MH),explored=new Uint8Array(MW*MH);
 const idx=(x,y)=>y*MW+x,inMap=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH;
 function noise(seed){const r=rng(seed),N=64,g=new Float32Array(N*N);for(let i=0;i<g.length;i++)g[i]=r();
  const at=(x,y)=>g[((y%N+N)%N)*N+((x%N+N)%N)],sm=t=>t*t*(3-2*t);
  return (x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=sm(x-xi),yf=sm(y-yi);const a=at(xi,yi),b=at(xi+1,yi),c=at(xi,yi+1),d=at(xi+1,yi+1);return a+(b-a)*xf+(c-a)*yf+(a-b-c+d)*xf*yf}}
 const SPX=62,SPY=62;
 function genWorld(seed){
- SEED=seed;const n1=noise(seed),n2=noise(seed+7),n3=noise(seed+19),r=rng(seed+3);
+ SEED=seed;const n1=noise(seed),n2=noise(seed+7),n3=noise(seed+19),nb1=noise(seed+31),nb2=noise(seed+47),r=rng(seed+3);
  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=idx(x,y);
   const a=n1(x/11,y/11)*.65+n1(x/4,y/4)*.35,b=n2(x/9,y/9)*.7+n2(x/3.5,y/3.5)*.3;
   let t=hash(x,y,seed)<.5?0:1;if(a>.7)t=2;else if(b<.2&&a<.5)t=3;
   const ds=Math.hypot(x-SPX-1.5,y-SPY-1.5);if(ds<8)t=hash(x,y,seed)<.5?0:1;
   if(x<1||y<1||x>MW-2||y>MH-2)t=2;
-  terr[i]=t;ore[i]=0;deco[i]=(t<2&&hash(x,y,seed+5)<.04)?1+Math.floor(hash(x,y,seed+6)*3):0;explored[i]=0}
+  const u=nb1(x/18,y/18)*.8+nb1(x/6,y/6)*.2,v=nb2(x/18,y/18)*.8+nb2(x/6,y/6)*.2;
+  biome[i]=u<.4&&v<.55?1:(u>.6&&v<.5?2:(v>.62?3:(u>.52&&v>.48?4:0)));
+  terr[i]=t;ore[i]=0;deco[i]=(t<2&&hash(x,y,seed+5)<(biome[i]===1?.09:.045))?1+Math.floor(hash(x,y,seed+6)*3):0;explored[i]=0}
  const patch=(dx,dy,rad,type)=>{const cx=SPX+1.5+dx,cy=SPY+1.5+dy;for(let y=Math.floor(cy-rad-2);y<=cy+rad+2;y++)for(let x=Math.floor(cx-rad-2);x<=cx+rad+2;x++){if(!inMap(x,y)||x<1||y<1||x>MW-2||y>MH-2)continue;const d=Math.hypot(x-cx,y-cy)/(rad*(.75+.5*n3(x/3,y/3)));if(d<1){const i=idx(x,y);ore[i]=type;terr[i]=hash(x,y,seed)<.5?0:1;deco[i]=0}}};
  [[-11,6,3.2],[10,-9,3],[22,15,4],[-26,-18,4],[36,-30,4.5]].forEach(p=>patch(...p,1));
  [[13,9,3],[-14,-11,3],[-31,21,4]].forEach(p=>patch(...p,2));
@@ -359,14 +366,23 @@ function genWorld(seed){
 
 /* ============ CHUNK RENDER ============ */
 const chunks=[];
-const GC=[['#4b3b5e','#4e3e62'],['#473858','#4b3b5e']];
+const BIO=[
+ {n:'Fialová púšť',g:['#4e3e61','#4a3a5c'],s:['#5b4a70','#3f3150','#6a5584','#44365a','#58476e'],st:'#433553',r:['#2a2236','#3a3049','#4a3f5c','#211a2b'],d:[['#2c5a4a','#3fae86','#b6ffd9'],['#7d4f9e','#9a6ac0','#ff9bf0'],['#2a9e95','#4fe0c8','#4fe0c8']]},
+ {n:'Tyrkysová džungľa',g:['#2f5d54','#2b564e'],s:['#3c7266','#224640','#4f8a7a','#28504a','#5aa08c'],st:'#264c45',r:['#1d3a35','#2b524a','#3d6b60','#16302b'],d:[['#1f4a3c','#5fd08a','#e6ff9a'],['#2f7a50','#7cf0b5','#ffe08a'],['#1d6e5a','#9df5c8','#ffffff']]},
+ {n:'Oranžové duny',g:['#a05e38','#985832'],s:['#b8704a','#7d4528','#d08a55','#874b2c','#e0a26a'],st:'#86492a',r:['#4a2a1a','#673b24','#82502f','#3a2014'],d:[['#6a3a14','#e8873a','#ffd27a'],['#7a4a1a','#c9782f','#ffe08a'],['#5a2e10','#ff9a3c','#fff0b0']]},
+ {n:'Ľadová planina',g:['#6f90b5','#6889ae'],s:['#88a8ca','#56769a','#b4d0ec','#5f7fa3','#d8ecff'],st:'#5b7ba0',r:['#3d5470','#55708f','#8fb0d2','#2f4560'],d:[['#4f7fb0','#bfe0ff','#ffffff'],['#5f86b0','#d9eefe','#ffffff'],['#3f6f9a','#9fd0ff','#ffffff']]},
+ {n:'Ružové kryštály',g:['#7c3c6e','#753668'],s:['#944e84','#5e2a54','#b8649f','#682f5d','#d47ab8'],st:'#62305a',r:['#3e1a38','#57264f','#7a3a6c','#301228'],d:[['#9a2f8a','#ff7be6','#ffd6f8'],['#7a1d73','#ff5fe0','#ffffff'],['#a04a9a','#ffb0f0','#ffffff']]}
+];
 function drawTile(g,x,y){
  const px=(x%CH)*T,py=(y%CH)*T,i=idx(x,y),t=terr[i],h=(k)=>hash(x,y,SEED+k);
  const P=(xx,yy,w,hh,c)=>{g.fillStyle=c;g.fillRect(px+xx,py+yy,w,hh)};
- P(0,0,16,16,t===1?'#4a3a5c':'#4e3e61');
- for(let k=0;k<5;k++){const c=['#5b4a70','#3f3150','#6a5584','#44365a','#58476e'][k];P(Math.floor(h(10+k)*15),Math.floor(h(20+k)*15),1,1,c)}
- if(h(30)<.3)P(Math.floor(h(31)*13),Math.floor(h(32)*13),3,1,'#433553');
- if(t===2){const ox=Math.floor(h(40)*3),oy=Math.floor(h(41)*3);P(1+ox,3+oy,13-ox,11-oy,'#17121f');P(2+ox,2+oy,11-ox,11-oy,'#2a2236');P(3+ox,3+oy,6,3,'#3a3049');P(3+ox,3+oy,2,1,'#4a3f5c');P(2+ox,11,11-ox,2,'#211a2b')}
+ const bi=BIO[biome[i]];P(0,0,16,16,bi.g[t===1?1:0]);
+ for(let k=0;k<6;k++){P(Math.floor(h(10+k)*15),Math.floor(h(20+k)*15),1,1,bi.s[k%5])}
+ if(h(30)<.35)P(Math.floor(h(31)*13),Math.floor(h(32)*13),3,1,bi.st);
+ // dithered blend toward neighbouring biomes
+ [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy],e)=>{if(!inMap(x+dx,y+dy))return;const nb=biome[idx(x+dx,y+dy)];if(nb===biome[i])return;const c=BIO[nb].g[0],c2=BIO[nb].s[2];
+   for(let k=0;k<14;k++){const a=Math.floor(h(100+e*20+k)*16),d=Math.floor(Math.pow(h(200+e*20+k),1.8)*6);const xx=dx===1?15-d:dx===-1?d:a,yy=dy===1?15-d:dy===-1?d:a;P(xx,yy,1,1,k%4?c:c2)}});
+ if(t===2){const R=bi.r,ox=Math.floor(h(40)*3),oy=Math.floor(h(41)*3);P(1+ox,3+oy,13-ox,11-oy,'#120e18');P(2+ox,2+oy,11-ox,11-oy,R[0]);P(3+ox,3+oy,6,3,R[1]);P(3+ox,3+oy,2,1,R[2]);P(2+ox,11,11-ox,2,R[3])}
  if(t===3){P(0,0,16,16,'#2fb38a');
    const nb=(dx,dy)=>!inMap(x+dx,y+dy)||terr[idx(x+dx,y+dy)]!==3;
    if(nb(0,-1))P(0,0,16,2,'#1d6e5a');if(nb(0,1))P(0,14,16,2,'#1d6e5a');if(nb(-1,0))P(0,0,2,16,'#1d6e5a');if(nb(1,0))P(14,0,2,16,'#1d6e5a');
@@ -378,10 +394,10 @@ function drawTile(g,x,y){
      if(o===3){P(bx+1,by,1,4,pal[0]);P(bx,by+1,3,3,pal[1]);P(bx+1,by+1,1,2,pal[2])}
      else{P(bx,by+1,4,2,pal[0]);P(bx,by,3,2,pal[1]);P(bx+1,by,1,1,pal[2])}}}
  const d=deco[i];
- if(d&&!o&&t<2){const bx=3+Math.floor(h(80)*8),by=3+Math.floor(h(81)*7);
-   if(d===1){P(bx+1,by+3,1,4,'#2c5a4a');P(bx,by+1,3,3,'#3fae86');P(bx+1,by+1,1,1,'#b6ffd9')}
-   else if(d===2){P(bx,by+2,1,3,'#7d4f9e');P(bx+2,by+1,1,4,'#9a6ac0');P(bx+4,by+2,1,3,'#7d4f9e');P(bx+2,by,1,1,'#ff9bf0')}
-   else{P(bx+1,by,2,5,'#2a9e95');P(bx+1,by,1,4,'#4fe0c8');P(bx+3,by+2,1,3,'#2a9e95')}}
+ if(d&&!o&&t<2){const bx=3+Math.floor(h(80)*8),by=3+Math.floor(h(81)*7),C=bi.d[d-1];
+   if(d===1){P(bx+1,by+3,1,4,C[0]);P(bx,by+1,3,3,C[1]);P(bx+1,by+1,1,1,C[2]);if(biome[i]===1){P(bx+3,by+4,1,3,C[0]);P(bx+3,by+3,2,2,C[1])}}
+   else if(d===2){P(bx,by+2,1,3,C[0]);P(bx+2,by+1,1,4,C[1]);P(bx+4,by+2,1,3,C[0]);P(bx+2,by,1,1,C[2])}
+   else{P(bx+1,by,2,5,C[0]);P(bx+1,by,1,4,C[1]);P(bx+3,by+2,1,3,C[0]);P(bx+1,by,1,1,C[2])}}
 }
 function buildChunks(){chunks.length=0;for(let cy=0;cy<MH/CH;cy++)for(let cx=0;cx<MW/CH;cx++){const c=cnv(CH*T,CH*T),g=c.getContext('2d');for(let y=cy*CH;y<(cy+1)*CH;y++)for(let x=cx*CH;x<(cx+1)*CH;x++)drawTile(g,x,y);chunks.push(c)}}
 
@@ -511,8 +527,8 @@ function line(x0,y0,x1,y1,c){ctx.fillStyle=c;const n=Math.max(Math.abs(x1-x0),Ma
 
 /* ============ MINIMAP ============ */
 const mc=$('#mc'),mx=mc.getContext('2d');let miniBase=null;
-function buildMini(){miniBase=mx.createImageData(MW,MH);const C={0:[78,62,97],1:[74,58,92],2:[30,24,40],3:[47,179,138]},OC=[null,[168,87,58],[201,138,58],[217,238,254],[255,95,224]];
- for(let i=0;i<MW*MH;i++){const c=ore[i]?OC[ore[i]]:C[terr[i]];miniBase.data.set([c[0],c[1],c[2],255],i*4)}}
+function buildMini(){miniBase=mx.createImageData(MW,MH);const hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)],C={2:[30,24,40],3:[47,179,138]},OC=[null,[168,87,58],[201,138,58],[217,238,254],[255,95,224]];
+ for(let i=0;i<MW*MH;i++){const c=ore[i]?OC[ore[i]]:(terr[i]>=2?C[terr[i]]:hx(BIO[biome[i]].g[0]));miniBase.data.set([c[0],c[1],c[2],255],i*4)}}
 function drawMini(){const img=new ImageData(new Uint8ClampedArray(miniBase.data),MW,MH);for(let i=0;i<MW*MH;i++)if(!explored[i]){img.data[i*4]=14;img.data[i*4+1]=10;img.data[i*4+2]=20}
  mx.putImageData(img,0,0);for(const b of B.values()){mx.fillStyle=b.type==='belt'?'#8d96aa':b.type==='hub'?'#ffb347':'#e8c170';mx.fillRect(b.x,b.y,b.w,b.h)}
  mx.fillStyle='#fff';mx.fillRect(Math.floor(player.x/T)-1,Math.floor(player.y/T)-1,3,3);mx.strokeStyle='rgba(255,255,255,.6)';mx.lineWidth=1;mx.strokeRect(camX/T+.5,camY/T+.5,VW/zoom/T,VH/zoom/T)}
@@ -522,10 +538,13 @@ function reveal(){const px=Math.floor(player.x/T),py=Math.floor(player.y/T),R=13
 const toastEl=$('#toast');let toastT=0;
 function toast(m,bad){toastEl.textContent=m;toastEl.style.color=bad?'var(--bad)':'var(--ink)';toastEl.style.opacity=1;toastT=2.6}
 function buildHot(){const h=$('#hot');h.innerHTML='';
- TOOLS.forEach((k,i)=>{const b=document.createElement('button');b.className='hb';b.dataset.k=k;b.innerHTML='<kbd>'+(i+1)+'</kbd><img alt="" src="'+BICON[k]+'"><span>'+BT[k].n+'</span>';b.onclick=()=>selectTool(k);h.appendChild(b)});
+ const HC={belt:'#9aa2b4',drill:'#e8c170',smelter:'#ff8a4a',splitter:'#ffd84a',maker:'#4fe0c8',assembler:'#b08cff'};
+ TOOLS.forEach((k,i)=>{const b=document.createElement('button');b.className='hb';b.style.setProperty('--hc',HC[k]);b.dataset.k=k;b.innerHTML='<kbd>'+(i+1)+'</kbd><img alt="" src="'+BICON[k]+'"><span>'+BT[k].n+'</span>';b.onclick=()=>selectTool(k);h.appendChild(b)});
+ const rb=document.createElement('button');rb.className='hb';rb.dataset.k='res';rb.style.setProperty('--hc','#ff7be6');rb.innerHTML='<kbd>T</kbd><img alt="" src="'+resIcon+'"><span>Výskum</span>';rb.onclick=()=>toggleTree();h.appendChild(rb);
  const d=document.createElement('button');d.className='hb del';d.dataset.k='del';d.innerHTML='<kbd>7</kbd><img alt="" src="'+delIcon+'"><span>Zbúrať</span>';d.onclick=()=>selectTool('del');h.appendChild(d);refreshHot()}
+const resIcon=spr(16,16,P=>{P(6,1,4,2,'#d9eefe');P(7,3,2,4,'#d9eefe');P(4,7,8,7,'#1b1d26');P(5,8,6,5,'#ff7be6');P(6,9,2,1,'#ffd6f8');P(4,13,8,2,'#1b1d26');P(9,10,1,1,'#4fe0c8');P(6,11,1,1,'#6fa8ff')}).toDataURL();
 const delIcon=spr(16,16,P=>{P(3,3,2,2,'#ff6b6b');P(5,5,2,2,'#ff6b6b');P(7,7,2,2,'#ff6b6b');P(9,9,2,2,'#ff6b6b');P(11,11,2,2,'#ff6b6b');P(11,3,2,2,'#ff6b6b');P(9,5,2,2,'#ff6b6b');P(5,9,2,2,'#ff6b6b');P(3,11,2,2,'#ff6b6b')}).toDataURL();
-function refreshHot(){document.querySelectorAll('.hb').forEach(b=>{const k=b.dataset.k;b.classList.toggle('on',tool===k);if(k!=='del'){const u=unlocked(k);b.classList.toggle('lock',!u);b.title=u?BT[k].n+': '+costStr(BT[k].cost)+'\n'+BT[k].d:lockMsg(BT[k].req)}})}
+function refreshHot(){document.querySelectorAll('.hb').forEach(b=>{const k=b.dataset.k;b.classList.toggle('on',tool===k);if(BT[k]){const u=unlocked(k);b.classList.toggle('lock',!u);b.title=u?BT[k].n+': '+costStr(BT[k].cost)+'\n'+BT[k].d:lockMsg(BT[k].req)}})}
 const costStr=c=>Object.entries(c).map(([k,n])=>n+'× '+IT[k].n).join(', ');
 function selectTool(k){mouse.r=false;if(k&&k!=='del'&&!unlocked(k)){toast(BT[k].n+': '+lockMsg(BT[k].req),true);sfx('err');return}tool=tool===k?null:k;refreshHot();if(tool)showInfo(null)}
 let invSig='';
@@ -540,9 +559,9 @@ function renderGoal(){
  let h;
  if(done.has('r_rocket'))h='<h3>Výskum</h3><div class="t">Raketa odletela</div><div class="d">Môžeš ďalej stavať a vylepšovať továreň.</div>';
  else if(!g){const n=RES.filter(resAvail).length;h='<h3>Výskum · '+done.size+' / '+RES.length+'</h3><div class="t">Vyber ďalší výskum</div><div class="d">K dispozícii: '+n+'. Sám si zvoľ, čo odomkneš. Platí sa surovinami zo skladu lode.</div>'}
- else{const ok=afford(g.cost);h='<h3>Výskum · '+done.size+' / '+RES.length+'</h3><div class="t">'+g.t+'</div><div class="d">'+g.d+'</div>'+costRows(g.cost)+'<button class="btn '+(ok?'go':'')+'" id="bMs" '+(ok?'':'disabled')+'>'+(g.id==='r_rocket'?'Odštartovať raketu':'Vyskúmať')+'</button><div class="d" style="margin:6px 0 0">Odomkne: '+g.unl+'</div>'}
+ else{const ok=afford(g.cost);h='<h3>Výskum · '+done.size+' / '+RES.length+' · <span style="color:'+TCOL[g.tier]+'">'+TIERS[g.tier]+'</span></h3><div class="t" style="color:'+TCOL[g.tier]+'">'+g.t+'</div><div class="d">'+g.d+'</div>'+costRows(g.cost)+'<button class="btn '+(ok?'go':'')+'" id="bMs" '+(ok?'':'disabled')+'>'+(g.id==='r_rocket'?'Odštartovať raketu':'Vyskúmať')+'</button><div class="d" style="margin:6px 0 0">Odomkne: '+g.unl+'</div>'}
  h+='<button class="btn" id="bTree" style="width:100%;margin-top:8px">Strom výskumu (T)</button>';
- $('#goal').innerHTML=h;const bm=$('#bMs');if(bm)bm.onclick=()=>doResearch(goal);$('#bTree').onclick=()=>toggleTree(true)}
+ const gc=g?TCOL[g.tier]:'#ffb347';$('#goal').style.borderColor=gc;$('#goal').style.boxShadow='0 0 0 2px #0a0710,0 0 18px '+gc+'55';$('#goal').innerHTML=h;const bm=$('#bMs');if(bm)bm.onclick=()=>doResearch(goal);$('#bTree').onclick=()=>toggleTree(true)}
 function applyRes(){beltSpeed=done.has('r_belt2')?3.6:2.2;drillMul=done.has('r_drill2')?1.6:1}
 function doResearch(id){const r=RESN[id];if(!r||!resAvail(r))return;if(!afford(r.cost)){toast('Chýbajú suroviny na výskum',true);sfx('err');return}
  pay(r.cost);done.add(id);sfx('ms');applyRes();if(goal===id)goal=null;goalSig='';refreshHot();if(info)renderInfo(true);renderTree();
@@ -550,8 +569,8 @@ function doResearch(id){const r=RESN[id];if(!r||!resAvail(r))return;if(!afford(r
  toast('Vyskúmané: '+r.t+' · '+r.unl);save()}
 let treeSig='';
 function renderTree(force){const el=$('#treeG');if($('#tree').hidden)return;const sig=[...done].join()+goal+RES.map(r=>Object.keys(r.cost).map(k=>Math.min(inv[k]||0,r.cost[k])).join()).join('|');if(!force&&sig===treeSig)return;treeSig=sig;
- el.innerHTML=TIERS.map((tn,ti)=>'<div class="tcol"><h3>'+tn+'</h3>'+RES.filter(r=>r.tier===ti).map(r=>{const st=done.has(r.id)?'done':(resAvail(r)?'av':'lock');const ok=st==='av'&&afford(r.cost);
-   return'<div class="node '+st+(goal===r.id?' goal':'')+'"><b>'+r.t+'</b><span class="u">'+r.unl+'</span>'+
+ el.innerHTML=TIERS.map((tn,ti)=>'<div class="tcol" style="--tc:'+TCOL[ti]+'"><h3>'+(ti+1)+' · '+tn+'</h3>'+RES.filter(r=>r.tier===ti).map(r=>{const st=done.has(r.id)?'done':(resAvail(r)?'av':'lock');const ok=st==='av'&&afford(r.cost);
+   return'<div class="node '+st+(goal===r.id?' goal':'')+'"><b class="nh">'+r.t+(st==='done'?' ✓':'')+'</b><span class="u">'+r.unl+'</span>'+
    (st==='done'?'<span style="color:var(--ok)">Vyskúmané</span>':'<div class="cost">'+Object.entries(r.cost).map(([k,n])=>'<span class="'+((inv[k]||0)>=n?'':'no')+'"><img class="ic" alt="" src="'+ICON[k]+'" title="'+IT[k].n+'">'+Math.floor(Math.min(inv[k]||0,n))+'/'+n+'</span>').join('')+'</div>'+
     (st==='lock'?'<span class="u">Najprv: '+r.pre.filter(p=>!done.has(p)).map(p=>RESN[p].t).join(', ')+'</span>':'<div class="row" style="margin:0"><button class="btn '+(ok?'go':'')+'" data-do="'+r.id+'" '+(ok?'':'disabled')+'>Vyskúmať</button><button class="btn" data-goal="'+r.id+'">'+(goal===r.id?'Sledujem':'Sledovať')+'</button></div>'))+'</div>'}).join('')+'</div>').join('');
  el.querySelectorAll('[data-do]').forEach(b=>b.onclick=()=>doResearch(b.dataset.do));
@@ -622,7 +641,7 @@ function placeBeltAt(x,y,r){const ex=bAt(x,y);if(ex){if(ex.type==='belt')ex.rot=
 function demolishAt(){const b=bAt(mouse.tx,mouse.ty);if(b&&b.type!=='hub'){remove(b);for(let k=0;k<8;k++)part((b.x+b.w/2)*T,(b.y+b.h/2)*T,(Math.random()-.5)*60,(Math.random()-.5)*60,.4,'#ff9a6b')}else if(b&&b.type==='hub'&&tool==='del'){toast('Loď sa zbúrať nedá',true)}}
 function tipUpdate(){const tip=$('#tip');if(!mouse.in||tool||launched){tip.hidden=true;return}const b=bAt(mouse.tx,mouse.ty);let h='';
  if(b){const st={work:'pracuje',idle:'čaká na suroviny',block:'výstup je plný'}[b.state]||'';h=BT[b.type].n+(b.type==='belt'||b.type==='hub'||b.type==='splitter'?'':'<small>'+(b.recipe?IT[REC[b.recipe].out].n+' · ':'')+st+'</small>')}
- else if(inMap(mouse.tx,mouse.ty)){const i=idx(mouse.tx,mouse.ty);if(ore[i])h=ORE_NAME[ore[i]]+'<small>drž myš = ručná ťažba</small>';else if(terr[i]===2)h='Skala';else if(terr[i]===3)h='Kyselinové jazierko'}
+ else if(inMap(mouse.tx,mouse.ty)){const i=idx(mouse.tx,mouse.ty);if(ore[i])h=ORE_NAME[ore[i]]+'<small>drž myš = ručná ťažba</small>';else if(terr[i]===2)h='Skala<small>'+BIO[biome[i]].n+'</small>';else if(terr[i]===3)h='Kyselinové jazierko';else h=BIO[biome[i]].n}
  if(!h){tip.hidden=true;return}tip.hidden=false;tip.innerHTML=h;tip.style.left=Math.min(mouse.sx,VW-200)+'px';tip.style.top=mouse.sy+'px'}
 if(matchMedia('(pointer:coarse)').matches){$('#pad').hidden=false;$('#pad').querySelectorAll('button').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))})}
 

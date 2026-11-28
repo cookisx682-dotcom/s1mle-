@@ -34,6 +34,7 @@ Alebo si stiahni [Kazeta13.zip](kazeta13/Kazeta13.zip), rozbaľ ho a otvor `hra.
 - Vrták, pás, pec, rozdeľovač, výrobňa a montáž
 - Strom výskumu: sám vyberáš, čo odomkneš (11 výskumov), až po raketu domov
 - Ruda → ingoty → plechy, kolesá, drôt → obvody, motory → raketa
+- 5 farebných oblastí: fialová púšť, tyrkysová džungľa, oranžové duny, ľadová planina, ružové kryštály
 - 4 druhy rúd, vexit ďaleko od lode, minimapa, ručná ťažba, ukladanie postupu
 
 **Ovládanie:** WASD chôdza · 1–6 stavby · R otočiť · Q zrušiť · ľavé = stavať · pravé = zbúrať · X zbúrať · T výskum · koliesko = priblíženie
