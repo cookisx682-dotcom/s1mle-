@@ -88,6 +88,23 @@ img.ic{width:24px;height:24px;image-rendering:pixelated;vertical-align:middle;fl
 .keys kbd{font:inherit;background:var(--panel2);border:2px solid var(--line);padding:0 6px;text-align:center}
 .card .row{margin-top:14px}
 
+#tree .tcard{width:min(1120px,100%)}
+.thead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.thead h1{font-size:30px}
+.tree{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:12px;overflow-x:auto;padding-bottom:4px}
+.tcol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.node{background:var(--panel2);border:2px solid var(--line);padding:9px;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
+.node b{font-size:16px}
+.node .u{color:var(--muted)}
+.node.done{border-color:var(--ok)}
+.node.av{border-color:var(--accent)}
+.node.lock{opacity:.5}
+.node.goal{box-shadow:0 0 0 2px var(--accent)}
+.node .cost{display:flex;flex-wrap:wrap;gap:4px 8px}
+.node .cost span{display:flex;align-items:center;gap:2px;font-variant-numeric:tabular-nums}
+.node .cost .no{color:var(--bad)}
+.node .ic{width:20px;height:20px}
+.node .btn{padding:4px 8px;font-size:13.5px}
 #pad{left:max(14px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 96px);display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:4px}
 #pad button{background:rgba(42,33,64,.8);border:2px solid var(--line);font-size:18px}
 @media (max-width:900px){
@@ -138,18 +155,25 @@ img.ic{width:24px;height:24px;image-rendering:pixelated;vertical-align:middle;fl
     <h1>PLANÉTA VEX</h1>
     <div class="sub">Továreň ďaleko od domova</div>
     <p>Tvoja nákladná loď <b>KX-13</b> núdzovo pristála na fialovej planéte Vex. Motory sú zničené, ale palubný počítač ešte žije.</p>
-    <p>Ťaž rudu, stav pásy a stroje a postav továreň, ktorá vyrobí diely na raketu. Splň 5 fáz a vráť sa domov.</p>
+    <p>Ťaž rudu, stav pásy a stroje a postav továreň, ktorá vyrobí diely na raketu. V strome výskumu si sám vyberáš, čo odomkneš, až kým nepostavíš raketu domov.</p>
     <div class="keys">
       <kbd>WASD</kbd><span>chôdza</span>
       <kbd>1–7</kbd><span>výber stavby · <kbd>R</kbd> otočiť · <kbd>Q</kbd> zrušiť</span>
       <kbd>Ľavé</kbd><span>stavať (pás ťahaj myšou) · bez stavby: klik na stroj = info, drž na rude = ručná ťažba</span>
       <kbd>Pravé</kbd><span>zbúrať (aj <kbd>X</kbd>, <kbd>7</kbd> alebo Ctrl+klik), vráti materiál</span>
+      <kbd>T</kbd><span>strom výskumu: sám vyberáš, čo odomkneš</span>
       <kbd>Koliesko</kbd><span>priblíženie</span>
     </div>
     <div class="row">
       <button class="btn go" id="bNew">Nová hra</button>
       <button class="btn" id="bCont" hidden>Pokračovať</button>
     </div>
+  </div>
+</div>
+<div id="tree" class="ov" hidden>
+  <div class="card px tcard">
+    <div class="thead"><div><h1>VÝSKUM</h1><div class="sub">Sám vyber, čo odomkneš. Výskum sa platí surovinami zo skladu lode.</div></div><button class="btn" id="bTreeX">Zavrieť (T)</button></div>
+    <div class="tree" id="treeG"></div>
   </div>
 </div>
 <div id="end" class="ov" hidden>
@@ -181,36 +205,44 @@ const ITEM_ORDER=Object.keys(IT);
 const ORE_ITEM=[null,'fe_ore','cu_ore','quartz','vex_ore'];
 const ORE_NAME=['','Železná ruda','Medená ruda','Kremeň','Vexit'];
 const RECIPES=[
- {id:'fe_ingot',m:'smelter',in:{fe_ore:1},out:'fe_ingot',n:1,time:1.6,ms:0},
- {id:'cu_ingot',m:'smelter',in:{cu_ore:1},out:'cu_ingot',n:1,time:1.6,ms:0},
- {id:'silicon',m:'smelter',in:{quartz:2},out:'silicon',n:1,time:2.5,ms:2},
- {id:'vex_crystal',m:'smelter',in:{vex_ore:2},out:'vex_crystal',n:1,time:3,ms:4},
- {id:'plate',m:'maker',in:{fe_ingot:2},out:'plate',n:1,time:2,ms:1},
- {id:'gear',m:'maker',in:{fe_ingot:2},out:'gear',n:1,time:2,ms:1},
- {id:'wire',m:'maker',in:{cu_ingot:1},out:'wire',n:2,time:1.5,ms:2},
- {id:'circuit',m:'assembler',in:{wire:3,silicon:1},out:'circuit',n:1,time:4,ms:3},
- {id:'motor',m:'assembler',in:{gear:2,wire:3,plate:1},out:'motor',n:1,time:5,ms:3},
- {id:'frame',m:'assembler',in:{plate:4,gear:2},out:'frame',n:1,time:5,ms:3},
- {id:'navcomp',m:'assembler',in:{circuit:2,vex_crystal:1},out:'navcomp',n:1,time:6,ms:4}
+ {id:'fe_ingot',m:'smelter',in:{fe_ore:1},out:'fe_ingot',n:1,time:1.6,req:null},
+ {id:'cu_ingot',m:'smelter',in:{cu_ore:1},out:'cu_ingot',n:1,time:1.6,req:null},
+ {id:'silicon',m:'smelter',in:{quartz:2},out:'silicon',n:1,time:2.5,req:'r_silicon'},
+ {id:'vex_crystal',m:'smelter',in:{vex_ore:2},out:'vex_crystal',n:1,time:3,req:'r_vexit'},
+ {id:'plate',m:'maker',in:{fe_ingot:2},out:'plate',n:1,time:2,req:'r_maker'},
+ {id:'gear',m:'maker',in:{fe_ingot:2},out:'gear',n:1,time:2,req:'r_maker'},
+ {id:'wire',m:'maker',in:{cu_ingot:1},out:'wire',n:2,time:1.5,req:'r_wire'},
+ {id:'circuit',m:'assembler',in:{wire:3,silicon:1},out:'circuit',n:1,time:4,req:'r_circuit'},
+ {id:'motor',m:'assembler',in:{gear:2,wire:3,plate:1},out:'motor',n:1,time:5,req:'r_motor'},
+ {id:'frame',m:'assembler',in:{plate:4,gear:2},out:'frame',n:1,time:5,req:'r_assembler'},
+ {id:'navcomp',m:'assembler',in:{circuit:2,vex_crystal:1},out:'navcomp',n:1,time:6,req:'r_vexit'}
 ];
 const REC={};RECIPES.forEach(r=>REC[r.id]=r);
 const BT={
- belt:{n:'Pás',w:1,h:1,cost:{fe_ingot:1},ms:0,d:'Prenáša predmety v smere šípok. Ťahaj myšou a pás sa sám natočí.'},
- drill:{n:'Vrták',w:2,h:2,cost:{fe_ingot:6},ms:0,d:'Položený na rudu ju ťaží. Čím viac políčok rudy pod ním, tým rýchlejšie.'},
- smelter:{n:'Pec',w:2,h:2,cost:{fe_ingot:8},ms:0,d:'Taví rudu na ingoty. Recept sa nastaví podľa prvej rudy, ktorá príde.'},
- splitter:{n:'Rozdeľovač',w:1,h:1,cost:{fe_ingot:3},ms:1,d:'Striedavo posiela predmety dopredu, doľava a doprava.'},
- maker:{n:'Výrobňa',w:2,h:2,cost:{fe_ingot:12,cu_ingot:4},ms:1,d:'Z ingotov robí plechy, ozubené kolesá a drôt.'},
- assembler:{n:'Montáž',w:2,h:2,cost:{plate:10,gear:6,cu_ingot:6},ms:2,d:'Skladá zložité diely z viacerých surovín.'},
- hub:{n:'Loď KX-13',w:4,h:4,cost:{},ms:99,d:'Tvoja loď. Prijme čokoľvek, čo do nej privedieš pásom, a uloží to do skladu.'}
+ belt:{n:'Pás',w:1,h:1,cost:{fe_ingot:1},req:null,d:'Prenáša predmety v smere šípok. Ťahaj myšou a pás sa sám natočí.'},
+ drill:{n:'Vrták',w:2,h:2,cost:{fe_ingot:6},req:null,d:'Položený na rudu ju ťaží. Čím viac políčok rudy pod ním, tým rýchlejšie.'},
+ smelter:{n:'Pec',w:2,h:2,cost:{fe_ingot:8},req:null,d:'Taví rudu na ingoty. Recept sa nastaví podľa prvej rudy, ktorá príde.'},
+ splitter:{n:'Rozdeľovač',w:1,h:1,cost:{fe_ingot:3},req:'r_split',d:'Striedavo posiela predmety dopredu, doľava a doprava.'},
+ maker:{n:'Výrobňa',w:2,h:2,cost:{fe_ingot:12,cu_ingot:4},req:'r_maker',d:'Z ingotov robí plechy, ozubené kolesá a drôt.'},
+ assembler:{n:'Montáž',w:2,h:2,cost:{plate:10,gear:6,cu_ingot:6},req:'r_assembler',d:'Skladá zložité diely z viacerých surovín.'},
+ hub:{n:'Loď KX-13',w:4,h:4,cost:{},req:'never',d:'Tvoja loď. Prijme čokoľvek, čo do nej privedieš pásom, a uloží to do skladu.'}
 };
 const TOOLS=['belt','drill','smelter','splitter','maker','assembler'];
-const MILES=[
- {t:'Núdzové pristátie',d:'Rozbehni prvú ťažbu a tavenie. Loď potrebuje železo na opravy.',need:{fe_ingot:40},unl:'Výrobňa, Rozdeľovač, plech a ozubené koleso'},
- {t:'Kovovýroba',d:'Na stavbu ďalších strojov treba plechy, kolesá a meď.',need:{plate:25,gear:15,cu_ingot:20},unl:'Montáž, drôt, kremík, rýchlejšie pásy'},
- {t:'Elektronika',d:'Riadiaci systém rakety potrebuje drôty a kremík.',need:{wire:50,silicon:15},unl:'Obvod, motor, raketový rám'},
- {t:'Pohon a riadenie',d:'Postav prvé motory a obvody. Vrtáky sa zrýchlia.',need:{circuit:15,motor:10,frame:5},unl:'Vexitový kryštál a navigačný počítač'},
- {t:'Návrat domov',d:'Posledné diely rakety. Navigácia potrebuje vexit z ďalekých ložísk.',need:{frame:10,motor:10,navcomp:5},unl:'Štart rakety'}
+const RES=[
+ {id:'r_maker',t:'Výrobňa',tier:0,pre:[],cost:{fe_ingot:30},unl:'Výrobňa · plech · ozubené koleso',d:'Stroj, ktorý z ingotov vyrába diely.'},
+ {id:'r_split',t:'Logistika',tier:0,pre:[],cost:{fe_ingot:15},unl:'Rozdeľovač',d:'Rozdelí jeden pás na viac strojov.'},
+ {id:'r_wire',t:'Elektrikárstvo',tier:1,pre:['r_maker'],cost:{plate:10,cu_ingot:20},unl:'Drôt vo Výrobni',d:'Meď sa dá ťahať na drôt.'},
+ {id:'r_silicon',t:'Kremíková pec',tier:1,pre:['r_maker'],cost:{fe_ingot:30,gear:10},unl:'Kremík v Peci',d:'Z bieleho kremeňa sa taví kremík.'},
+ {id:'r_assembler',t:'Montáž',tier:1,pre:['r_maker'],cost:{plate:25,gear:15,cu_ingot:15},unl:'Montáž · raketový rám',d:'Stroj na zložité diely z viacerých surovín.'},
+ {id:'r_belt2',t:'Rýchle pásy',tier:1,pre:['r_maker','r_split'],cost:{gear:20,plate:20},unl:'Pásy o 60 % rýchlejšie',d:'Silnejšie motory pásov.'},
+ {id:'r_circuit',t:'Elektronika',tier:2,pre:['r_wire','r_silicon','r_assembler'],cost:{wire:40,silicon:15},unl:'Obvod v Montáži',d:'Z drôtu a kremíka vznikajú obvody.'},
+ {id:'r_motor',t:'Motory',tier:2,pre:['r_wire','r_assembler'],cost:{wire:30,gear:20,plate:15},unl:'Motor v Montáži',d:'Elektromotor z kolies, drôtu a plechu.'},
+ {id:'r_drill2',t:'Lepšie vrtáky',tier:3,pre:['r_motor','r_circuit'],cost:{motor:5,circuit:5},unl:'Vrtáky o 60 % rýchlejšie',d:'Vrtáky dostanú motory a riadenie.'},
+ {id:'r_vexit',t:'Vexitová chémia',tier:3,pre:['r_circuit'],cost:{circuit:10,motor:5},unl:'Vexitový kryštál · navigačný počítač',d:'Ružový vexit z ďalekých ložísk napája navigáciu.'},
+ {id:'r_rocket',t:'Raketa domov',tier:4,pre:['r_vexit','r_motor'],cost:{frame:10,motor:10,navcomp:5},unl:'Štart rakety',d:'Posledný výskum. Raketa odletí domov.'}
 ];
+const RESN={};RES.forEach(r=>RESN[r.id]=r);
+const TIERS=['Základy','Priemysel','Elektronika','Pokrok','Cesta domov'];
 
 /* ============ PIXEL ART ============ */
 function cnv(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
@@ -354,10 +386,11 @@ function drawTile(g,x,y){
 function buildChunks(){chunks.length=0;for(let cy=0;cy<MH/CH;cy++)for(let cx=0;cx<MW/CH;cx++){const c=cnv(CH*T,CH*T),g=c.getContext('2d');for(let y=cy*CH;y<(cy+1)*CH;y++)for(let x=cx*CH;x<(cx+1)*CH;x++)drawTile(g,x,y);chunks.push(c)}}
 
 /* ============ STATE ============ */
-let grid=new Int32Array(MW*MH),B=new Map(),nextId=1,inv={},ms=0,beltSpeed=2.2,drillMul=1,playTime=0,launched=false,hub=null,stats={smelted:0,hubIn:0,made:0};
+let grid=new Int32Array(MW*MH),B=new Map(),nextId=1,inv={},done=new Set(),goal=null,beltSpeed=2.2,drillMul=1,playTime=0,launched=false,hub=null,stats={smelted:0,hubIn:0,made:0};
 const player={x:(SPX+2)*T,y:(SPY+6)*T,vx:0,vy:0,face:1,walk:0};
-const unlocked=k=>BT[k].ms<=ms;
-const recOk=r=>r.ms<=ms;
+const unlocked=k=>!BT[k].req||done.has(BT[k].req);
+const recOk=r=>!r.req||done.has(r.req);
+const lockMsg=req=>'Odomkne výskum „'+(RESN[req]?RESN[req].t:'?')+'“';
 function addInv(k,n){inv[k]=(inv[k]||0)+n}
 function afford(c){return Object.entries(c).every(([k,n])=>(inv[k]||0)>=n)}
 function pay(c){for(const k in c)inv[k]-=c[k]}
@@ -492,35 +525,47 @@ function buildHot(){const h=$('#hot');h.innerHTML='';
  TOOLS.forEach((k,i)=>{const b=document.createElement('button');b.className='hb';b.dataset.k=k;b.innerHTML='<kbd>'+(i+1)+'</kbd><img alt="" src="'+BICON[k]+'"><span>'+BT[k].n+'</span>';b.onclick=()=>selectTool(k);h.appendChild(b)});
  const d=document.createElement('button');d.className='hb del';d.dataset.k='del';d.innerHTML='<kbd>7</kbd><img alt="" src="'+delIcon+'"><span>Zbúrať</span>';d.onclick=()=>selectTool('del');h.appendChild(d);refreshHot()}
 const delIcon=spr(16,16,P=>{P(3,3,2,2,'#ff6b6b');P(5,5,2,2,'#ff6b6b');P(7,7,2,2,'#ff6b6b');P(9,9,2,2,'#ff6b6b');P(11,11,2,2,'#ff6b6b');P(11,3,2,2,'#ff6b6b');P(9,5,2,2,'#ff6b6b');P(5,9,2,2,'#ff6b6b');P(3,11,2,2,'#ff6b6b')}).toDataURL();
-function refreshHot(){document.querySelectorAll('.hb').forEach(b=>{const k=b.dataset.k;b.classList.toggle('on',tool===k);if(k!=='del'){const u=unlocked(k);b.classList.toggle('lock',!u);b.title=u?BT[k].n+': '+costStr(BT[k].cost)+'\n'+BT[k].d:'Odomkne sa vo fáze '+(BT[k].ms+1)}})}
+function refreshHot(){document.querySelectorAll('.hb').forEach(b=>{const k=b.dataset.k;b.classList.toggle('on',tool===k);if(k!=='del'){const u=unlocked(k);b.classList.toggle('lock',!u);b.title=u?BT[k].n+': '+costStr(BT[k].cost)+'\n'+BT[k].d:lockMsg(BT[k].req)}})}
 const costStr=c=>Object.entries(c).map(([k,n])=>n+'× '+IT[k].n).join(', ');
-function selectTool(k){mouse.r=false;if(k&&k!=='del'&&!unlocked(k)){toast(BT[k].n+' sa odomkne vo fáze '+(BT[k].ms+1),true);sfx('err');return}tool=tool===k?null:k;refreshHot();if(tool)showInfo(null)}
+function selectTool(k){mouse.r=false;if(k&&k!=='del'&&!unlocked(k)){toast(BT[k].n+': '+lockMsg(BT[k].req),true);sfx('err');return}tool=tool===k?null:k;refreshHot();if(tool)showInfo(null)}
 let invSig='';
 function renderInv(){const keys=ITEM_ORDER.filter(k=>inv[k]>0);const sig=keys.map(k=>k+inv[k]).join();if(sig===invSig)return;invSig=sig;
  $('#invg').innerHTML=keys.length?keys.map(k=>'<div title="'+IT[k].n+'"><img class="ic" alt="" src="'+ICON[k]+'"><span>'+Math.floor(inv[k])+' '+IT[k].n+'</span></div>').join(''):'<div style="color:var(--muted)">Prázdny</div>'}
 let goalSig='';
-function renderGoal(){const m=MILES[ms];
- if(!m){const s='done';if(goalSig!==s){goalSig=s;$('#goal').innerHTML='<h3>Hotovo</h3><div class="t">Raketa odletela</div><div class="d">Môžeš ďalej stavať a vylepšovať továreň.</div>'}return}
- const sig=ms+':'+Object.keys(m.need).map(k=>Math.min(inv[k]||0,m.need[k])).join();if(sig===goalSig)return;goalSig=sig;
- const ok=Object.entries(m.need).every(([k,n])=>(inv[k]||0)>=n);
- $('#goal').innerHTML='<h3>Fáza '+(ms+1)+' / '+MILES.length+'</h3><div class="t">'+m.t+'</div><div class="d">'+m.d+'</div>'+
-  Object.entries(m.need).map(([k,n])=>{const h=Math.min(inv[k]||0,n);return'<div class="req"><img class="ic" alt="" src="'+ICON[k]+'"><div class="n">'+IT[k].n+'<div class="bar"><i style="width:'+(h/n*100)+'%"></i></div></div><span class="c">'+Math.floor(h)+' / '+n+'</span></div>'}).join('')+
-  '<button class="btn '+(ok?'go':'')+'" id="bMs" '+(ok?'':'disabled')+'>'+(ms===MILES.length-1?'Odštartovať raketu':'Odovzdať do lode')+'</button><div class="d" style="margin:6px 0 0">Odomkne: '+m.unl+'</div>';
- $('#bMs').onclick=completeMs}
-function completeMs(){const m=MILES[ms];if(!m||!Object.entries(m.need).every(([k,n])=>(inv[k]||0)>=n))return;pay(m.need);sfx('ms');ms++;
- if(ms===2)beltSpeed=3.6;if(ms===4)drillMul=1.6;
- goalSig='';refreshHot();if(info)showInfo(info);
- if(ms>=MILES.length){startLaunch();return}
- toast('Fáza splnená! Odomknuté: '+m.unl);save()}
+const resAvail=r=>!done.has(r.id)&&r.pre.every(p=>done.has(p));
+function costRows(c){return Object.entries(c).map(([k,n])=>{const h=Math.min(inv[k]||0,n);return'<div class="req"><img class="ic" alt="" src="'+ICON[k]+'"><div class="n">'+IT[k].n+'<div class="bar"><i style="width:'+(h/n*100)+'%"></i></div></div><span class="c">'+Math.floor(h)+' / '+n+'</span></div>'}).join('')}
+function renderGoal(){
+ const g=goal&&RESN[goal];
+ const sig=[goal,done.size,g?Object.keys(g.cost).map(k=>Math.min(inv[k]||0,g.cost[k])).join():''].join('|');if(sig===goalSig)return;goalSig=sig;
+ let h;
+ if(done.has('r_rocket'))h='<h3>Výskum</h3><div class="t">Raketa odletela</div><div class="d">Môžeš ďalej stavať a vylepšovať továreň.</div>';
+ else if(!g){const n=RES.filter(resAvail).length;h='<h3>Výskum · '+done.size+' / '+RES.length+'</h3><div class="t">Vyber ďalší výskum</div><div class="d">K dispozícii: '+n+'. Sám si zvoľ, čo odomkneš. Platí sa surovinami zo skladu lode.</div>'}
+ else{const ok=afford(g.cost);h='<h3>Výskum · '+done.size+' / '+RES.length+'</h3><div class="t">'+g.t+'</div><div class="d">'+g.d+'</div>'+costRows(g.cost)+'<button class="btn '+(ok?'go':'')+'" id="bMs" '+(ok?'':'disabled')+'>'+(g.id==='r_rocket'?'Odštartovať raketu':'Vyskúmať')+'</button><div class="d" style="margin:6px 0 0">Odomkne: '+g.unl+'</div>'}
+ h+='<button class="btn" id="bTree" style="width:100%;margin-top:8px">Strom výskumu (T)</button>';
+ $('#goal').innerHTML=h;const bm=$('#bMs');if(bm)bm.onclick=()=>doResearch(goal);$('#bTree').onclick=()=>toggleTree(true)}
+function applyRes(){beltSpeed=done.has('r_belt2')?3.6:2.2;drillMul=done.has('r_drill2')?1.6:1}
+function doResearch(id){const r=RESN[id];if(!r||!resAvail(r))return;if(!afford(r.cost)){toast('Chýbajú suroviny na výskum',true);sfx('err');return}
+ pay(r.cost);done.add(id);sfx('ms');applyRes();if(goal===id)goal=null;goalSig='';refreshHot();if(info)renderInfo(true);renderTree();
+ if(id==='r_rocket'){toggleTree(false);startLaunch();return}
+ toast('Vyskúmané: '+r.t+' · '+r.unl);save()}
+let treeSig='';
+function renderTree(force){const el=$('#treeG');if($('#tree').hidden)return;const sig=[...done].join()+goal+RES.map(r=>Object.keys(r.cost).map(k=>Math.min(inv[k]||0,r.cost[k])).join()).join('|');if(!force&&sig===treeSig)return;treeSig=sig;
+ el.innerHTML=TIERS.map((tn,ti)=>'<div class="tcol"><h3>'+tn+'</h3>'+RES.filter(r=>r.tier===ti).map(r=>{const st=done.has(r.id)?'done':(resAvail(r)?'av':'lock');const ok=st==='av'&&afford(r.cost);
+   return'<div class="node '+st+(goal===r.id?' goal':'')+'"><b>'+r.t+'</b><span class="u">'+r.unl+'</span>'+
+   (st==='done'?'<span style="color:var(--ok)">Vyskúmané</span>':'<div class="cost">'+Object.entries(r.cost).map(([k,n])=>'<span class="'+((inv[k]||0)>=n?'':'no')+'"><img class="ic" alt="" src="'+ICON[k]+'" title="'+IT[k].n+'">'+Math.floor(Math.min(inv[k]||0,n))+'/'+n+'</span>').join('')+'</div>'+
+    (st==='lock'?'<span class="u">Najprv: '+r.pre.filter(p=>!done.has(p)).map(p=>RESN[p].t).join(', ')+'</span>':'<div class="row" style="margin:0"><button class="btn '+(ok?'go':'')+'" data-do="'+r.id+'" '+(ok?'':'disabled')+'>Vyskúmať</button><button class="btn" data-goal="'+r.id+'">'+(goal===r.id?'Sledujem':'Sledovať')+'</button></div>'))+'</div>'}).join('')+'</div>').join('');
+ el.querySelectorAll('[data-do]').forEach(b=>b.onclick=()=>doResearch(b.dataset.do));
+ el.querySelectorAll('[data-goal]').forEach(b=>b.onclick=()=>{goal=b.dataset.goal;goalSig='';renderGoal();toggleTree(false);sfx('ok')})}
+function toggleTree(on){const t=$('#tree');t.hidden=on===undefined?!t.hidden:!on;if(!t.hidden){tool=null;refreshHot();renderTree(true)}}
 const HINTS=[
  {c:()=>[...B.values()].some(b=>b.type==='drill'),t:'Ahoj, kapitán. Hrdzavé kamene vľavo od lode sú železná ruda. Vyber Vrták (2) a polož ho na ne.'},
  {c:()=>stats.smelted>0,t:'Vrták ťaží, ale ruda nemá kam ísť. Postav Pec (3) a spoj ju s vrtákom Pásom (1). Pás ťahaj myšou od oranžovej šípky vrtáka k peci.'},
  {c:()=>stats.hubIn>0,t:'Pec taví železo. Ingoty pošli ďalším pásom do lode. Loď prijme hocičo a uloží to do skladu vpravo hore.'},
- {c:()=>ms>=1,t:'Výborne! Rozbehni viac vrtákov a pecí. Keď nazbieraš 40 ingotov, odovzdaj ich v paneli vľavo. Bez stavby môžeš rudu aj ručne ťažiť podržaním myši.'},
- {c:()=>ms>=2,t:'Odomkla sa Výrobňa. Klikni na ňu a vyber recept: plech alebo ozubené koleso. Meď (oranžovo-zelená ruda) roztav na medené ingoty.'},
- {c:()=>ms>=3,t:'Montáž spája viac surovín. Kremeň (biele kryštály) roztav na kremík, meď premeň na drôt. Pásy sú teraz rýchlejšie.'},
- {c:()=>ms>=4,t:'Obvody, motory a rámy sa skladajú v Montáži. Viac surovín privedieš do jedného stroja z rôznych strán.'},
- {c:()=>ms>=5,t:'Vexit žiari ružovo ďaleko od lode, pozri sa na minimapu. Roztav ho na kryštály a postav navigačné počítače.'},
+ {c:()=>done.size>=1,t:'Výborne! Ingoty sa hromadia v lodi. Otvor Strom výskumu (T) a sám vyber, čo odomkneš ako prvé. Výskum sa platí surovinami zo skladu. Rudu môžeš aj ručne ťažiť podržaním myši.'},
+ {c:()=>done.has('r_maker'),t:'Tip: dobrý prvý výskum je Výrobňa. Robí plechy a kolesá, ktoré treba na ďalší výskum.'},
+ {c:()=>done.has('r_assembler'),t:'Výrobňa je tvoja. Klikni na ňu a vyber recept: plech alebo koleso. Meď (oranžovo-zelená ruda) roztav na medené ingoty. Smeruj k Montáži.'},
+ {c:()=>done.has('r_vexit'),t:'Montáž spája viac surovín, privedieš ich do stroja z rôznych strán. Obvody a motory vedú k Vexitovej chémii a ceste domov.'},
+ {c:()=>done.has('r_rocket'),t:'Vexit žiari ružovo ďaleko od lode, pozri sa na minimapu. Roztav ho na kryštály, postav navigačné počítače a vyskúmaj Raketu domov.'},
  {c:()=>false,t:'Raketa je späť doma. Továreň beží ďalej, pokojne ju rozširuj.'}
 ];
 let hintSig=-1;
@@ -528,11 +573,11 @@ function renderHint(){let i=0;while(i<HINTS.length-1&&HINTS[i].c())i++;if(i!==hi
 function showInfo(b){info=b;const el=$('#info');if(!b){el.hidden=true;return}el.hidden=false;renderInfo(true)}
 let infoSig='';
 function renderInfo(force){const b=info;if(!b)return;if(!B.has(b.id)){showInfo(null);return}
- const sig=JSON.stringify([b.recipe,b.buf,b.out,b.state,b.item,ms,inv.fe_ore,inv.cu_ore]);if(!force&&sig===infoSig)return;infoSig=sig;
+ const sig=JSON.stringify([b.recipe,b.buf,b.out,b.state,b.item,done.size,inv.fe_ore,inv.cu_ore]);if(!force&&sig===infoSig)return;infoSig=sig;
  const d=BT[b.type],el=$('#info');let h='<h3>'+(b.type==='hub'?'Loď':'Stavba')+'</h3><div class="t">'+d.n+'</div><div class="d">'+d.d+'</div>';
  if(b.type==='drill'){h+='<div class="buf">Ložisko: '+ORE_NAME[b.ore]+' · '+b.oreN+'/4 políčok · '+(60/(3.2/b.oreN/drillMul)).toFixed(0)+' ks/min</div><div class="buf"><img class="ic" src="'+ICON[b.outItem]+'" alt=""> výstup '+b.out+'/6</div>'}
  if(['smelter','maker','assembler'].includes(b.type)){
-  h+='<div class="recs">'+RECIPES.filter(r=>r.m===b.type).map(r=>{const ok=recOk(r);return'<button class="rec'+(b.recipe===r.id?' on':'')+'" data-r="'+r.id+'" '+(ok?'':'disabled title="Odomkne sa vo fáze '+(r.ms+1)+'"')+'><b>'+(ok?IT[r.out].n:'??? (fáza '+(r.ms+1)+')')+'</b>'+(ok?Object.entries(r.in).map(([k,n])=>n+'<img alt="" src="'+ICON[k]+'">').join(' ')+' → '+r.n+'<img alt="" src="'+ICON[r.out]+'">':'')+'</button>'}).join('')+'</div>';
+  h+='<div class="recs">'+RECIPES.filter(r=>r.m===b.type).map(r=>{const ok=recOk(r);return'<button class="rec'+(b.recipe===r.id?' on':'')+'" data-r="'+r.id+'" '+(ok?'':'disabled title="'+lockMsg(r.req)+'"')+'><b>'+(ok?IT[r.out].n:'??? ('+RESN[r.req].t+')')+'</b>'+(ok?Object.entries(r.in).map(([k,n])=>n+'<img alt="" src="'+ICON[k]+'">').join(' ')+' → '+r.n+'<img alt="" src="'+ICON[r.out]+'">':'')+'</button>'}).join('')+'</div>';
   if(b.recipe){const r=REC[b.recipe];h+='<div class="buf">'+Object.keys(r.in).map(k=>'<span><img class="ic" src="'+ICON[k]+'" alt=""> '+(b.buf[k]||0)+'/'+r.in[k]*3+'</span>').join('')+'<span>→ '+b.out+'/6</span></div>';
    h+='<div class="row"><button class="btn" id="bFill">Doplniť zo skladu</button>'+(b.out?'<button class="btn" id="bTake">Vybrať výstup</button>':'')+'</div>'}
   else h+='<div class="buf">Vyber recept alebo priveď surovinu pásom.</div>'}
@@ -551,7 +596,8 @@ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.ke
  if(k>='1'&&k<='6')selectTool(TOOLS[+k-1]);if(k==='7')selectTool('del');
  if(k==='r'){if(tool&&tool!=='del'){rot=(rot+(e.shiftKey?3:1))%4}else if(info&&info.type!=='hub'){info.rot=(info.rot+1)%4;sfx('place')}}
  if(k==='x'){mouse.r=true;demolishAt()}
- if(k==='q'||k==='escape'){tool=null;drag=null;refreshHot();showInfo(null)}
+ if(k==='t'){toggleTree();return}
+ if(k==='q'||k==='escape'){toggleTree(false);tool=null;drag=null;refreshHot();showInfo(null)}
  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault()});
 addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys[k]=false;if(k==='x')mouse.r=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false});
@@ -601,14 +647,16 @@ function endScreen(){const m=Math.floor(playTime/60);$('#endT').textContent='Pos
 const SK='planeta-vex-save-1';
 function save(){try{const bl=[...B.values()].filter(b=>b.type!=='hub').map(b=>[b.type,b.x,b.y,b.rot,b.recipe]);
  let ex='';for(let i=0;i<explored.length;i+=4)ex+=(explored[i]|explored[i+1]<<1|explored[i+2]<<2|explored[i+3]<<3).toString(16);
- localStorage.setItem(SK,JSON.stringify({v:1,seed:SEED,inv,ms,bl,px:player.x,py:player.y,pt:playTime,st:stats,ex,launched:ms>=MILES.length}))}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem(SK));if(!s||s.v!==1)return false;newWorld(s.seed);inv=s.inv||{};ms=s.ms||0;playTime=s.pt||0;stats=Object.assign(stats,s.st||{});
- if(ms>=2)beltSpeed=3.6;if(ms>=4)drillMul=1.6;
+ localStorage.setItem(SK,JSON.stringify({v:2,seed:SEED,inv,done:[...done],goal,bl,px:player.x,py:player.y,pt:playTime,st:stats,ex}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(SK));if(!s||!s.v)return false;newWorld(s.seed);inv=s.inv||{};
+ if(s.v===1){const m=s.ms||0,M=[['r_maker','r_split'],['r_assembler','r_wire','r_silicon','r_belt2'],['r_circuit','r_motor'],['r_drill2','r_vexit'],['r_rocket']];for(let i=0;i<m;i++)M[i].forEach(x=>done.add(x))}else{done=new Set(s.done||[]);goal=s.goal||null}
+playTime=s.pt||0;stats=Object.assign(stats,s.st||{});
+ applyRes();
  (s.bl||[]).forEach(([t,x,y,r,rec])=>{const b=place(t,x,y,r,true,true);if(b&&rec)b.recipe=rec});
  player.x=s.px;player.y=s.py;if(s.ex)for(let i=0;i<s.ex.length;i++){const v=parseInt(s.ex[i],16);for(let k=0;k<4;k++)explored[i*4+k]=(v>>k)&1}
  return true}catch(e){return false}}
 function hasSave(){try{return!!localStorage.getItem(SK)}catch(e){return false}}
-function newWorld(seed){genWorld(seed);buildChunks();buildMini();grid=new Int32Array(MW*MH);B=new Map();nextId=1;inv={};ms=0;beltSpeed=2.2;drillMul=1;playTime=0;launched=false;stats={smelted:0,hubIn:0,made:0};
+function newWorld(seed){genWorld(seed);buildChunks();buildMini();grid=new Int32Array(MW*MH);B=new Map();nextId=1;inv={};done=new Set();goal=null;beltSpeed=2.2;drillMul=1;playTime=0;launched=false;stats={smelted:0,hubIn:0,made:0};
  hub=place('hub',SPX,SPY,1,true,true);player.x=(SPX+2)*T;player.y=(SPY+6)*T;goalSig='';invSig='';hintSig=-1;parts.length=0}
 function newGame(){newWorld((Math.random()*1e9)|0);inv={fe_ingot:30};refreshHot();save()}
 
@@ -623,14 +671,15 @@ function step(now){const dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
   const tx=player.x-VW/zoom/2,ty=player.y-VH/zoom/2;camX+=(tx-camX)*Math.min(1,dt*8);camY+=(ty-camY)*Math.min(1,dt*8);
   if(launched){camY+=( (hub.y*T-launchY+32-VH/zoom/2)-camY)*Math.min(1,dt*3)}
   mouse.wx=camX+mouse.sx/zoom;mouse.wy=camY+mouse.sy/zoom;mouse.tx=Math.floor(mouse.wx/T);mouse.ty=Math.floor(mouse.wy/T);
-  miniT-=dt;if(miniT<=0){miniT=.4;reveal();drawMini();renderInv();renderGoal();renderHint();renderInfo(false)}
+  miniT-=dt;if(miniT<=0){miniT=.4;reveal();drawMini();renderInv();renderGoal();renderHint();renderInfo(false);renderTree()}
   saveT+=dt;if(saveT>15){saveT=0;save()}
   if(toastT>0){toastT-=dt;if(toastT<=0)toastEl.style.opacity=0}}
  render()}
 let launchedShown=false;
-function start(cont){$('#intro').hidden=true;if(!(cont&&load()))newGame();launchedShown=ms>=MILES.length;if(ms>=MILES.length)launched=false;
+function start(cont){$('#intro').hidden=true;if(!(cont&&load()))newGame();launchedShown=done.has('r_rocket');launched=false;
  camX=player.x-VW/zoom/2;camY=player.y-VH/zoom/2;buildHot();running=true;reveal();drawMini();goalSig='';renderGoal();renderInv();renderHint();
  toast(cont?'Vitaj späť na planéte Vex':'Loď KX-13 pristála. Postav prvý vrták.')}
+$('#bTreeX').onclick=()=>toggleTree(false);
 $('#bNew').onclick=()=>{sfx('ok');start(false)};
 $('#bCont').onclick=()=>{sfx('ok');start(true)};
 $('#bMore').onclick=()=>{$('#end').hidden=true;launched=false;launchY=0;goalSig='';renderGoal();renderHint()};
