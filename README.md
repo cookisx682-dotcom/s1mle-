@@ -23,15 +23,16 @@ Alebo si stiahni [Kazeta13.zip](kazeta13/Kazeta13.zip), rozbaľ ho a otvor `hra.
 
 ---
 
-# Mechatronika
+# Planéta Vex
 
-3D laboratórium v prehliadači. Rozober a zlož procesor diel po dieli a vyrob vlastný mikročip.
+2D pixel-art hra o stavbe továrne. Tvoja loď KX-13 núdzovo pristála na fialovej planéte Vex. Ťaž rudu, stav pásy a stroje, splň 5 fáz a postav raketu domov.
 
-**Hrať:** https://cookisx682-dotcom.github.io/s1mle-/mechatronika/ (alebo otvor `mechatronika/index.html`)
+<p align="center"><img src="vex/title.png" width="396" alt="Planéta Vex"></p>
 
-- **Dielňa:** 10 dielov procesora (ventilátor, chladič, pasta, kryt, indium, čip, bumpy, kondenzátory, substrát, guličky BGA). Rozložený 3D pohľad, rez a test zapnutia s teplotou.
-- **Výroba čipu:** 11 krokov od čistenia wafera po rezanie na čipy. Hotový čip potom zabalíš v Dielni.
-- **Sprievodca:** po kliknutí vysvetlí každý diel a pri chybe povie, prečo to nejde.
-- Pripravujem: motor auta, elektromotor, robotické rameno.
+**Hrať:** https://cookisx682-dotcom.github.io/s1mle-/vex/ (alebo otvor `vex/index.html`)
 
-**Ovládanie:** ťahaj diel = vyber / vlož · klik = popis · myš = otáčanie a zoom
+- Vrták, pás, pec, rozdeľovač, výrobňa a montáž
+- Ruda → ingoty → plechy, kolesá, drôt → obvody, motory → raketa
+- 4 druhy rúd, vexit ďaleko od lode, minimapa, ručná ťažba, ukladanie postupu
+
+**Ovládanie:** WASD chôdza · 1–6 stavby · R otočiť · Q zrušiť · ľavé = stavať · pravé = zbúrať · koliesko = priblíženie
